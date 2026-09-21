@@ -5,3 +5,5 @@
 3. **Observation Loss Masking**: Every SFT dataset builder (`BC-Init` and `SCoRe-SFT`) must assert that environment observation tokens (`observation`) have loss weight `0.0`. Training on tool stdout/stderr degrades reasoning stability.
 4. **TPU Dimension Alignment**: Tensor batch sizes, sequence padding lengths, and LoRA/projection ranks on TPU `v6e` must be multiples of `256` to match the 256x256 MXU systolic array and avoid padding waste or XLA recompilation.
 5. **Cloud Resource Naming**: Any cloud VM, TPU slice, or GKE resource created by scripts must follow `<resource>-jawadamin-<region>-MMYY` (e.g., `tpu-v6e-jawadamin-us-east5-0926`).
+6. **Per-Wave `concepts.md` (Git-Ignored)**: Every wave `N` must publish `.agents/wave-N/concepts.md` (kept untracked by git) explaining the core mathematical, algorithmic, and hardware concepts leveraged in that wave.
+
