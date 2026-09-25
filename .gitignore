@@ -24,3 +24,4 @@ build/
 checkpoints/
 outputs/
 logs/
+data/
