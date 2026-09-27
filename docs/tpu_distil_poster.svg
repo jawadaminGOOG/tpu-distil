@@ -1,0 +1,272 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1260" width="1920" height="1260">
+
+        <defs>
+          <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#070C18"/>
+            <stop offset="50%" stop-color="#0B1325"/>
+            <stop offset="100%" stop-color="#091020"/>
+          </linearGradient>
+          <linearGradient id="hdrGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#0F172A"/>
+            <stop offset="50%" stop-color="#1E293B"/>
+            <stop offset="100%" stop-color="#0F172A"/>
+          </linearGradient>
+          <style>
+            text { font-family: 'Inter', 'DejaVu Sans', 'Segoe UI', Arial, sans-serif; }
+            .mono { font-family: 'JetBrains Mono', 'DejaVu Sans Mono', monospace; }
+          </style>
+        </defs>
+        
+<rect x="0" y="0" width="1920" height="1260" fill="url(#bgGrad)"/>
+<rect x="30" y="24" width="1860" height="160" rx="14" fill="url(#hdrGrad)" stroke="#38BDF8" stroke-width="2"/>
+<text x="54" y="68" fill="#F8FAFC" font-size="25" font-weight="800">TPU-Distil: On-Policy Agentic Self-Correction (SCoRe-RL) on Cloud TPU v6e</text>
+<text x="54" y="104" fill="#7DD3FC" font-size="14.5" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V3.1-Terminus (v6e-16) into Qwen3-30B-A3B / Qwen3-Next (v6e-4 &amp; v6e-8)</text>
+<text x="54" y="136" fill="#CBD5E1" font-size="12.5" class="mono">4-File Engine (trajectory.py • sandbox.py • splicer.py • score_reward.py) | 2,048 Verified MPS Trajectories | 48-Layer LoRA GRPO</text>
+<text x="54" y="164" fill="#94A3B8" font-size="12">Zero Oracle Test Feedback (include_test_feedback=False)  •  100% Observation Loss Masking (loss_mask=0.0)  •  256-Token MXU Alignment</text>
+<rect x="1175" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#10B981" stroke-width="2"/>
+<text x="1283" y="78" fill="#10B981" font-size="27" font-weight="800" text-anchor="middle">32.0%</text>
+<text x="1283" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">+16.0% Pass@1</text>
+<text x="1283" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">SCoRe-RL on Terminal-Bench</text>
+<text x="1283" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">16/50 vs 8/50 Zero-Shot (p=0.0002)</text>
+<rect x="1405" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#38BDF8" stroke-width="2"/>
+<text x="1513" y="78" fill="#38BDF8" font-size="27" font-weight="800" text-anchor="middle">20.9%</text>
+<text x="1513" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">+16.3% vs BC</text>
+<text x="1513" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">Wrong &#8594; Right Recovery</text>
+<text x="1513" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">9/43 Recovered vs 2/43 BC (p=0.0004)</text>
+<rect x="1635" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#F59E0B" stroke-width="2"/>
+<text x="1743" y="78" fill="#F59E0B" font-size="27" font-weight="800" text-anchor="middle">14.51 GB</text>
+<text x="1743" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">0 OOMs / 8 Chips</text>
+<text x="1743" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">Peak TPU v6e HBM / Chip</text>
+<text x="1743" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">48 Layers + Frozen 128-Exp Router</text>
+<rect x="30" y="206" width="620" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="50" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">1. End-to-End SCoRe-RL Architecture on Cloud TPU v6e</text>
+<rect x="48" y="258" width="584" height="96" rx="8" fill="#1E3A8A" fill-opacity="0.45" stroke="#60A5FA" stroke-width="1.5"/>
+<text x="64" y="282" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 0: Student Rollout to First Error s_m (TPU v6e-4)</text>
+<text x="64" y="304" fill="#E2E8F0" font-size="11.8">• Qwen3-30B-A3B executes bash/python in rootless ContainerSandbox</text>
+<text x="64" y="324" fill="#E2E8F0" font-size="11.8">• Halts at first failing step m (exit_code != 0); saves git diff snapshot s_m</text>
+<text x="64" y="344" fill="#FDE68A" font-size="11.8" font-weight="600">• Zero-Shot Baseline: 16.0% Pass@1 (8/50) vs Teacher 56.0% (28/50)</text>
+<rect x="48" y="368" width="584" height="96" rx="8" fill="#064E3B" fill-opacity="0.45" stroke="#34D399" stroke-width="1.5"/>
+<text x="64" y="392" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1A: Mixed-Policy Splicing (MPS) with Teacher (TPU v6e-16)</text>
+<text x="64" y="414" fill="#E2E8F0" font-size="11.8">• DeepSeek-V3.1-Terminus generates recovery suffix (a*_m..a*_T) from s_m</text>
+<text x="64" y="434" fill="#E2E8F0" font-size="11.8">• 2,048 verified spliced trajectories (MBPP: 635, HumanEval: 139, KodCode: 1,274)</text>
+<text x="64" y="454" fill="#FDE68A" font-size="11.8" font-weight="600">• Strict loss_mask=0.0 on 811,860 obs tokens; 1.0 on 539,906 recovery tokens</text>
+<rect x="48" y="478" width="584" height="96" rx="8" fill="#4C1D95" fill-opacity="0.45" stroke="#A78BFA" stroke-width="1.5"/>
+<text x="64" y="502" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1B: 48-Layer Pipeline-Parallel LoRA SCoRe-SFT (TPU v6e-8)</text>
+<text x="64" y="524" fill="#E2E8F0" font-size="11.8">• 8 TPU v6e chips (12 layers/chip via jax.lax.scan, 256-aligned sequences)</text>
+<text x="64" y="544" fill="#E2E8F0" font-size="11.8">• Rank-64 LoRA (q/k/v/o_proj, 192 matrices) + Frozen MoE Router (gate_proj)</text>
+<text x="64" y="564" fill="#FDE68A" font-size="11.8" font-weight="600">• SCoRe-SFT reaches 24.0% Pass@1 (12/50) vs BC-Control 18.0% (9/50)</text>
+<rect x="48" y="588" width="584" height="96" rx="8" fill="#7C2D12" fill-opacity="0.45" stroke="#FB923C" stroke-width="1.5"/>
+<text x="64" y="612" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 2: Short-Horizon Branching LoRA GRPO (TPU v6e-8)</text>
+<text x="64" y="634" fill="#E2E8F0" font-size="11.8">• Branches G=8 on-policy rollouts directly from cached error state s_m (H_rem=4)</text>
+<text x="64" y="654" fill="#E2E8F0" font-size="11.8">• Reference policy pi_ref via LoRA scale=0.0 on same slice (0 GB extra HBM)</text>
+<text x="64" y="674" fill="#FDE68A" font-size="11.8" font-weight="600">• Hybrid reward: R_term + alpha * Phi(s_t, a_t) - beta * D_KL &#8594; 32.0% Pass@1</text>
+<rect x="670" y="206" width="610" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="690" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">2. Held-Out Terminal-Bench (50 Tasks) 4-Arm Ablation</text>
+<line x1="735" y1="635.0" x2="1250" y2="635.0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="639.0" fill="#94A3B8" font-size="11.5" text-anchor="end">0%</text>
+<line x1="735" y1="579.2" x2="1250" y2="579.2" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="583.2" fill="#94A3B8" font-size="11.5" text-anchor="end">10%</text>
+<line x1="735" y1="523.3" x2="1250" y2="523.3" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="527.3" fill="#94A3B8" font-size="11.5" text-anchor="end">20%</text>
+<line x1="735" y1="467.5" x2="1250" y2="467.5" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="471.5" fill="#94A3B8" font-size="11.5" text-anchor="end">30%</text>
+<line x1="735" y1="411.7" x2="1250" y2="411.7" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="415.7" fill="#94A3B8" font-size="11.5" text-anchor="end">40%</text>
+<line x1="735" y1="355.8" x2="1250" y2="355.8" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="359.8" fill="#94A3B8" font-size="11.5" text-anchor="end">50%</text>
+<line x1="735" y1="300.0" x2="1250" y2="300.0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="304.0" fill="#94A3B8" font-size="11.5" text-anchor="end">60%</text>
+<line x1="735" y1="322.3" x2="1250" y2="322.3" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="745" y="314.3" fill="#FDA4AF" font-size="11.8" font-weight="700">Teacher Zero-Shot Baseline: 56.0% (28/50) — DeepSeek-V3.1-Terminus (v6e-16)</text>
+<rect x="768" y="545.7" width="42" height="89.3" rx="4" fill="#64748B" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="814" y="622.0" width="42" height="13.0" rx="4" fill="#475569" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="789" y="527.7" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">16.0%</text>
+<text x="789" y="540.7" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(8/50)</text>
+<text x="835" y="604.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">2.3%</text>
+<text x="835" y="617.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(1/43)</text>
+<text x="812" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">Zero-Shot</text>
+<text x="812" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Base v6e-4)</text>
+<rect x="892" y="534.5" width="42" height="100.5" rx="4" fill="#3B82F6" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="938" y="609.0" width="42" height="26.0" rx="4" fill="#1D4ED8" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="913" y="516.5" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">18.0%</text>
+<text x="913" y="529.5" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(9/50)</text>
+<text x="959" y="591.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">4.7%</text>
+<text x="959" y="604.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(2/43)</text>
+<text x="936" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">BC-Control</text>
+<text x="936" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Teacher SFT)</text>
+<rect x="1016" y="501.0" width="42" height="134.0" rx="4" fill="#8B5CF6" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="1062" y="570.1" width="42" height="64.9" rx="4" fill="#6D28D9" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="1037" y="483.0" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">24.0%</text>
+<text x="1037" y="496.0" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(12/50)</text>
+<text x="1083" y="552.1" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">11.6%</text>
+<text x="1083" y="565.1" fill="#94A3B8" font-size="10.2" text-anchor="middle">(5/43)</text>
+<text x="1060" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">SCoRe-SFT</text>
+<text x="1060" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(MPS SFT)</text>
+<rect x="1140" y="456.3" width="42" height="178.7" rx="4" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="1186" y="518.1" width="42" height="116.9" rx="4" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="1161" y="438.3" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">32.0%</text>
+<text x="1161" y="451.3" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(16/50)</text>
+<text x="1207" y="500.1" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">20.9%</text>
+<text x="1207" y="513.1" fill="#94A3B8" font-size="10.2" text-anchor="middle">(9/43)</text>
+<text x="1184" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">SCoRe-RL</text>
+<text x="1184" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(SFT + GRPO)</text>
+<rect x="745" y="340" width="380" height="52" rx="6" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+<rect x="758" y="351" width="14" height="14" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
+<text x="780" y="363" fill="#F8FAFC" font-size="11.8" font-weight="600">Overall Pass@1 (%) across 50 Held-Out Tasks</text>
+<rect x="758" y="371" width="14" height="14" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="2,2"/>
+<text x="780" y="383" fill="#A7F3D0" font-size="11.8">Wrong &#8594; Right Recovery P(pass_final | fail_turn_0)</text>
+<text x="975" y="698" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">Paired Bootstrap (10k): +16.0% Pass@1 (95% CI [+6%, +26%], p=0.0002) | +16.3% W&#8594;R vs BC (p=0.0004)</text>
+<rect x="1300" y="206" width="590" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="1320" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">3. TPU v6e-8 48-Layer Optimization Dynamics</text>
+<text x="1325" y="268" fill="#E2E8F0" font-size="12.5" font-weight="700">Stage 1: 48-Layer Masked SFT Loss (20 Steps, lr=5e-4, seq_len=256)</text>
+<line x1="1355" y1="445.0" x2="1860" y2="445.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="449.0" fill="#94A3B8" font-size="11" text-anchor="end">0.0</text>
+<line x1="1355" y1="412.4" x2="1860" y2="412.4" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="416.4" fill="#94A3B8" font-size="11" text-anchor="end">1.0</text>
+<line x1="1355" y1="379.8" x2="1860" y2="379.8" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="383.8" fill="#94A3B8" font-size="11" text-anchor="end">2.0</text>
+<line x1="1355" y1="347.2" x2="1860" y2="347.2" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="351.2" fill="#94A3B8" font-size="11" text-anchor="end">3.0</text>
+<line x1="1355" y1="314.6" x2="1860" y2="314.6" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="318.6" fill="#94A3B8" font-size="11" text-anchor="end">4.0</text>
+<line x1="1355" y1="282.0" x2="1860" y2="282.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="286.0" fill="#94A3B8" font-size="11" text-anchor="end">5.0</text>
+<polyline fill="none" stroke="#60A5FA" stroke-width="2.4" points="1355.0,300.2 1381.6,283.6 1408.2,341.1 1434.7,389.0 1461.3,428.6 1487.9,402.3 1514.5,405.5 1541.1,405.7 1567.6,410.6 1594.2,426.2 1620.8,444.5 1647.4,419.3 1673.9,433.3 1700.5,429.9 1727.1,422.5 1753.7,417.3 1780.3,421.5 1806.8,428.1 1833.4,440.7 1860.0,430.9"/><circle cx="1355.0" cy="300.2" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1381.6" cy="283.6" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1408.2" cy="341.1" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1434.7" cy="389.0" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1461.3" cy="428.6" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1487.9" cy="402.3" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1514.5" cy="405.5" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1541.1" cy="405.7" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1567.6" cy="410.6" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1594.2" cy="426.2" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1620.8" cy="444.5" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1647.4" cy="419.3" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1673.9" cy="433.3" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1700.5" cy="429.9" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1727.1" cy="422.5" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1753.7" cy="417.3" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1780.3" cy="421.5" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1806.8" cy="428.1" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1833.4" cy="440.7" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1860.0" cy="430.9" r="3.4" fill="#60A5FA" stroke="#0F172A" stroke-width="1.2"/>
+<polyline fill="none" stroke="#A78BFA" stroke-width="2.4" points="1355.0,396.2 1381.6,410.0 1408.2,417.8 1434.7,414.3 1461.3,429.4 1487.9,424.0 1514.5,434.2 1541.1,428.2 1567.6,430.8 1594.2,432.5 1620.8,432.9 1647.4,430.9 1673.9,426.0 1700.5,424.2 1727.1,428.6 1753.7,421.5 1780.3,424.7 1806.8,430.2 1833.4,428.2 1860.0,427.4"/><circle cx="1355.0" cy="396.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1381.6" cy="410.0" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1408.2" cy="417.8" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1434.7" cy="414.3" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1461.3" cy="429.4" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1487.9" cy="424.0" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1514.5" cy="434.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1541.1" cy="428.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1567.6" cy="430.8" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1594.2" cy="432.5" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1620.8" cy="432.9" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1647.4" cy="430.9" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1673.9" cy="426.0" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1700.5" cy="424.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1727.1" cy="428.6" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1753.7" cy="421.5" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1780.3" cy="424.7" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1806.8" cy="430.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1833.4" cy="428.2" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/><circle cx="1860.0" cy="427.4" r="3.4" fill="#A78BFA" stroke="#0F172A" stroke-width="1.2"/>
+<text x="1495" y="305" fill="#60A5FA" font-size="11.2" font-weight="700">● BC-Control: 4.4418 &#8594; 0.4327 (31.4K masked obs tokens)</text>
+<text x="1495" y="324" fill="#A78BFA" font-size="11.2" font-weight="700">● SCoRe-SFT: 1.4984 &#8594; 0.5409 (93.5K masked obs tokens)</text>
+<text x="1325" y="492" fill="#E2E8F0" font-size="12.5" font-weight="700">Stage 2: Short-Horizon GRPO Surrogate Loss (36 Steps, G=8, lr=8e-5)</text>
+<line x1="1355" y1="508.0" x2="1860" y2="508.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="512.0" fill="#94A3B8" font-size="11" text-anchor="end">0.00</text>
+<line x1="1355" y1="543.7" x2="1860" y2="543.7" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="547.7" fill="#94A3B8" font-size="11" text-anchor="end">-0.05</text>
+<line x1="1355" y1="579.4" x2="1860" y2="579.4" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="583.4" fill="#94A3B8" font-size="11" text-anchor="end">-0.10</text>
+<line x1="1355" y1="615.0" x2="1860" y2="615.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="619.0" fill="#94A3B8" font-size="11" text-anchor="end">-0.15</text>
+<line x1="1355" y1="650.7" x2="1860" y2="650.7" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="1347" y="654.7" fill="#94A3B8" font-size="11" text-anchor="end">-0.20</text>
+<polyline fill="none" stroke="#10B981" stroke-width="2.4" points="1355.0,508.0 1369.4,517.1 1383.9,615.9 1398.3,601.6 1412.7,602.1 1427.1,600.6 1441.6,624.0 1456.0,630.4 1470.4,576.7 1484.9,565.1 1499.3,601.8 1513.7,514.6 1528.1,560.7 1542.6,579.7 1557.0,540.1 1571.4,603.3 1585.9,614.5 1600.3,624.4 1614.7,646.0 1629.1,649.9 1643.6,638.7 1658.0,640.3 1672.4,601.0 1686.9,601.4 1701.3,644.3 1715.7,630.0 1730.1,601.8 1744.6,601.3 1759.0,601.8 1773.4,579.9 1787.9,623.5 1802.3,640.6 1816.7,569.4 1831.1,588.3 1845.6,593.6 1860.0,636.2"/><circle cx="1355.0" cy="508.0" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1369.4" cy="517.1" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1383.9" cy="615.9" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1398.3" cy="601.6" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1412.7" cy="602.1" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1427.1" cy="600.6" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1441.6" cy="624.0" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1456.0" cy="630.4" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1470.4" cy="576.7" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1484.9" cy="565.1" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1499.3" cy="601.8" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1513.7" cy="514.6" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1528.1" cy="560.7" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1542.6" cy="579.7" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1557.0" cy="540.1" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1571.4" cy="603.3" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1585.9" cy="614.5" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1600.3" cy="624.4" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1614.7" cy="646.0" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1629.1" cy="649.9" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1643.6" cy="638.7" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1658.0" cy="640.3" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1672.4" cy="601.0" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1686.9" cy="601.4" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1701.3" cy="644.3" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1715.7" cy="630.0" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1730.1" cy="601.8" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1744.6" cy="601.3" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1759.0" cy="601.8" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1773.4" cy="579.9" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1787.9" cy="623.5" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1802.3" cy="640.6" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1816.7" cy="569.4" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1831.1" cy="588.3" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1845.6" cy="593.6" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/><circle cx="1860.0" cy="636.2" r="3.4" fill="#10B981" stroke="#0F172A" stroke-width="1.2"/>
+<text x="1420" y="530" fill="#10B981" font-size="11.2" font-weight="700">● SCoRe-RL GRPO: 0.0000 &#8594; -0.1797 | Mean Reward = 0.8851 | KL = 0.0687</text>
+<text x="1595" y="698" fill="#CBD5E1" font-size="11.2" text-anchor="middle">MoE Router Entropy Drift: 0.028 nats (BC) / 0.048 nats (SCoRe-SFT) — Zero Router Collapse</text>
+<rect x="30" y="736" width="620" height="500" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="50" y="770" fill="#38BDF8" font-size="17.5" font-weight="700">4. Per-Task TPU Log-Prob Margin on 8 Recovered Tasks</text>
+<text x="50" y="792" fill="#94A3B8" font-size="11.8">Margin = Delta_LogProb(k=0 Recovery) - Delta_LogProb(k=1 Baseline); &gt; 0 Selects Verified Fix</text>
+<line x1="355.0" y1="808" x2="355.0" y2="1172" stroke="#F43F5E" stroke-width="2" stroke-dasharray="5,3"/>
+<text x="355.0" y="1192" fill="#FDA4AF" font-size="11.2" font-weight="700" text-anchor="middle">0.0 Decision Boundary</text>
+<text x="195" y="836" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">git-workflow-hack</text>
+<rect x="355.0" y="820" width="18.6" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="834" width="22.8" height="12" rx="2" fill="#10B981"/>
+<text x="385.8" y="843" fill="#C4B5FD" font-size="10.8" font-weight="700">+0.09 (BC + SFT + RL)</text>
+<text x="195" y="880" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">analyze-access-logs</text>
+<rect x="355.0" y="864" width="36.3" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="878" width="140.5" height="12" rx="2" fill="#10B981"/>
+<text x="503.5" y="887" fill="#C4B5FD" font-size="10.8" font-weight="700">+0.56 (SFT + RL)</text>
+<text x="195" y="924" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">countdown-game</text>
+<rect x="355.0" y="908" width="37.9" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="922" width="149.2" height="12" rx="2" fill="#10B981"/>
+<text x="512.2" y="931" fill="#C4B5FD" font-size="10.8" font-weight="700">+0.60 (SFT + RL)</text>
+<text x="195" y="968" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">organization-json-gen</text>
+<rect x="355.0" y="952" width="23.9" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="966" width="105.2" height="12" rx="2" fill="#10B981"/>
+<text x="468.2" y="975" fill="#C4B5FD" font-size="10.8" font-weight="700">+0.42 (SFT + RL)</text>
+<text x="195" y="1012" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">ode-solver-rk4</text>
+<rect x="317.8" y="996" width="37.2" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="1010" width="54.8" height="12" rx="2" fill="#10B981"/>
+<text x="417.8" y="1019" fill="#34D399" font-size="10.8" font-weight="700">+0.22 (RL Only (+GRPO))</text>
+<text x="195" y="1056" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">pandas-etl</text>
+<rect x="345.4" y="1040" width="9.7" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="1054" width="96.0" height="12" rx="2" fill="#10B981"/>
+<text x="459.0" y="1063" fill="#34D399" font-size="10.8" font-weight="700">+0.38 (RL Only (+GRPO))</text>
+<text x="195" y="1100" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">heterogeneous-dates</text>
+<rect x="319.6" y="1084" width="35.5" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="1098" width="70.2" height="12" rx="2" fill="#10B981"/>
+<text x="433.2" y="1107" fill="#34D399" font-size="10.8" font-weight="700">+0.28 (RL Only (+GRPO))</text>
+<text x="195" y="1144" fill="#F8FAFC" font-size="11.8" font-weight="700" text-anchor="end" class="mono">recover-accuracy-log</text>
+<rect x="242.3" y="1128" width="112.7" height="12" rx="2" fill="#8B5CF6"/>
+<rect x="355.0" y="1142" width="28.0" height="12" rx="2" fill="#10B981"/>
+<text x="391.0" y="1151" fill="#34D399" font-size="10.8" font-weight="700">+0.11 (RL Only (+GRPO))</text>
+<rect x="55" y="1200" width="560" height="24" rx="4" fill="#1E293B"/>
+<rect x="70" y="1206" width="12" height="12" fill="#8B5CF6"/>
+<text x="88" y="1216" fill="#E2E8F0" font-size="11.5">Stage 1 SCoRe-SFT Margin (Flips 4/8)</text>
+<rect x="330" y="1206" width="12" height="12" fill="#10B981"/>
+<text x="348" y="1216" fill="#E2E8F0" font-size="11.5">Stage 2 SCoRe-RL Margin (Flips All 8/8)</text>
+<rect x="670" y="736" width="610" height="500" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="690" y="770" fill="#38BDF8" font-size="17.5" font-weight="700">5. Cloud TPU v6e-8 Per-Chip HBM Telemetry (48 Layers)</text>
+<text x="690" y="792" fill="#94A3B8" font-size="11.8">8 Physical TPU v6 lite Chips Across 2 Hosts  •  12 Transformer Layers + 96 Active Experts / Chip</text>
+<line x1="735" y1="1142.0" x2="1255" y2="1142.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="727" y="1146.0" fill="#94A3B8" font-size="11" text-anchor="end">0 GB</text>
+<line x1="735" y1="1064.0" x2="1255" y2="1064.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="727" y="1068.0" fill="#94A3B8" font-size="11" text-anchor="end">8 GB</text>
+<line x1="735" y1="986.0" x2="1255" y2="986.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="727" y="990.0" fill="#94A3B8" font-size="11" text-anchor="end">16 GB</text>
+<line x1="735" y1="908.0" x2="1255" y2="908.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="727" y="912.0" fill="#94A3B8" font-size="11" text-anchor="end">24 GB</text>
+<line x1="735" y1="830.0" x2="1255" y2="830.0" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="727" y="834.0" fill="#94A3B8" font-size="11" text-anchor="end">32 GB</text>
+<line x1="735" y1="869.0" x2="1255" y2="869.0" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="747" y="861.0" fill="#FDA4AF" font-size="11.8" font-weight="700">Safety Ceiling: 28.0 GB / Chip (Physical Capacity: 31.24 GiB)</text>
+<rect x="748" y="1031.3" width="22" height="110.7" rx="3" fill="#38BDF8"/>
+<rect x="772" y="1000.5" width="22" height="141.5" rx="3" fill="#F59E0B"/>
+<text x="771" y="994.5" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">14.5</text>
+<text x="771" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_0</text>
+<text x="771" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L0-11</text>
+<rect x="811" y="1037.0" width="22" height="105.0" rx="3" fill="#38BDF8"/>
+<rect x="835" y="1032.7" width="22" height="109.3" rx="3" fill="#F59E0B"/>
+<text x="834" y="1026.7" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.2</text>
+<text x="834" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_1</text>
+<text x="834" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L12-23</text>
+<rect x="874" y="1037.0" width="22" height="105.0" rx="3" fill="#38BDF8"/>
+<rect x="898" y="1032.7" width="22" height="109.3" rx="3" fill="#F59E0B"/>
+<text x="897" y="1026.7" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.2</text>
+<text x="897" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_2</text>
+<text x="897" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L24-35</text>
+<rect x="937" y="1031.4" width="22" height="110.6" rx="3" fill="#38BDF8"/>
+<rect x="961" y="1028.3" width="22" height="113.7" rx="3" fill="#F59E0B"/>
+<text x="960" y="1022.3" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.7</text>
+<text x="960" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_3</text>
+<text x="960" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L36-47</text>
+<rect x="1000" y="1031.3" width="22" height="110.7" rx="3" fill="#38BDF8"/>
+<rect x="1024" y="1000.5" width="22" height="141.5" rx="3" fill="#F59E0B"/>
+<text x="1023" y="994.5" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">14.5</text>
+<text x="1023" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_4</text>
+<text x="1023" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L0-11</text>
+<rect x="1063" y="1037.0" width="22" height="105.0" rx="3" fill="#38BDF8"/>
+<rect x="1087" y="1032.7" width="22" height="109.3" rx="3" fill="#F59E0B"/>
+<text x="1086" y="1026.7" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.2</text>
+<text x="1086" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_5</text>
+<text x="1086" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L12-23</text>
+<rect x="1126" y="1037.0" width="22" height="105.0" rx="3" fill="#38BDF8"/>
+<rect x="1150" y="1032.7" width="22" height="109.3" rx="3" fill="#F59E0B"/>
+<text x="1149" y="1026.7" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.2</text>
+<text x="1149" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_6</text>
+<text x="1149" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L24-35</text>
+<rect x="1189" y="1031.4" width="22" height="110.6" rx="3" fill="#38BDF8"/>
+<rect x="1213" y="1028.3" width="22" height="113.7" rx="3" fill="#F59E0B"/>
+<text x="1212" y="1022.3" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">11.7</text>
+<text x="1212" y="1160" fill="#F8FAFC" font-size="11" font-weight="700" text-anchor="middle">TPU_7</text>
+<text x="1212" y="1175" fill="#94A3B8" font-size="10" text-anchor="middle">L36-47</text>
+<rect x="745" y="1192" width="465" height="28" rx="5" fill="#1E293B"/>
+<rect x="760" y="1200" width="12" height="12" fill="#38BDF8"/>
+<text x="778" y="1210" fill="#E2E8F0" font-size="11.5">Active HBM (11.13 GB base)</text>
+<rect x="965" y="1200" width="12" height="12" fill="#F59E0B"/>
+<text x="983" y="1210" fill="#E2E8F0" font-size="11.5">Peak VJP Backward HBM (14.51 GB max)</text>
+<rect x="1300" y="736" width="590" height="500" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+<text x="1320" y="770" fill="#38BDF8" font-size="17.5" font-weight="700">6. Key Practitioner Findings &amp; Reproducibility</text>
+<rect x="1318" y="792" width="554" height="96" rx="8" fill="#1E293B" stroke="#60A5FA" stroke-width="1.5"/>
+<text x="1334" y="818" fill="#60A5FA" font-size="13.2" font-weight="700">1. Why Pure Behavioral Cloning (BC) Plateaus at 18.0% (+1 Task):</text>
+<text x="1334" y="844" fill="#E2E8F0" font-size="11.8">Training only on error-free teacher transcripts leaves the student brittle when</text>
+<text x="1334" y="866" fill="#CBD5E1" font-size="11.8">its own Turn-0 command fails (P(pass_1 | fail_0) = 4.65%, recovering only 2/43).</text>
+<rect x="1318" y="900" width="554" height="96" rx="8" fill="#1E293B" stroke="#A78BFA" stroke-width="1.5"/>
+<text x="1334" y="926" fill="#A78BFA" font-size="13.2" font-weight="700">2. First-Error Splicing (MPS) + Obs Masking Reaches 24.0% (+4 Tasks):</text>
+<text x="1334" y="952" fill="#E2E8F0" font-size="11.8">Splicing Teacher recoveries at the exact student failure state s_m and setting</text>
+<text x="1334" y="974" fill="#CBD5E1" font-size="11.8">loss_mask=0.0 on tool stdout/stderr prevents hallucination and reaches 11.63% W&#8594;R.</text>
+<rect x="1318" y="1008" width="554" height="96" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="1.5"/>
+<text x="1334" y="1034" fill="#10B981" font-size="13.2" font-weight="700">3. Short-Horizon GRPO Doubles Gain Over SFT to 32.0% (+8 Tasks):</text>
+<text x="1334" y="1060" fill="#E2E8F0" font-size="11.8">On-policy MBPP sandbox rollouts penalize no-op bash headers (#!/bin/bash, mkdir -p)</text>
+<text x="1334" y="1082" fill="#CBD5E1" font-size="11.8">and boost self-contained heredoc scripts (python3 &lt;&lt; 'EOF'), hitting 20.93% W&#8594;R.</text>
+<rect x="1318" y="1116" width="554" height="96" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
+<text x="1334" y="1142" fill="#F59E0B" font-size="13.2" font-weight="700">4. Zero-Overhead Reference Policy &amp; Frozen MoE Router on TPU v6e-8:</text>
+<text x="1334" y="1168" fill="#E2E8F0" font-size="11.8">Computing pi_ref logprobs by setting lora_scale=0.0 saves 89 GB of duplicate base</text>
+<text x="1334" y="1190" fill="#CBD5E1" font-size="11.8">weights, keeping peak HBM at 14.51 GB/chip (&lt;50% of 31.24 GiB v6e capacity).</text>
+</svg>
