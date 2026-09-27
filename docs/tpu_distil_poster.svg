@@ -20,7 +20,7 @@
 <rect x="0" y="0" width="1920" height="1260" fill="url(#bgGrad)"/>
 <rect x="30" y="24" width="1860" height="160" rx="14" fill="url(#hdrGrad)" stroke="#38BDF8" stroke-width="2"/>
 <text x="54" y="68" fill="#F8FAFC" font-size="25" font-weight="800">TPU-Distil: On-Policy Agentic Self-Correction (SCoRe-RL) on Cloud TPU v6e</text>
-<text x="54" y="104" fill="#7DD3FC" font-size="14.5" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V3.1-Terminus (671B/37B, v6e-16) into Qwen3-30B-A3B-Instruct-2507 (30.5B/3.3B, v6e-4 &amp; v6e-8)</text>
+<text x="54" y="104" fill="#7DD3FC" font-size="14.2" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V4.1-Flash (552B/16B mxfp4, v6e-16) into Qwen3-30B-A3B-Instruct-2507 (30.5B/3.3B, v6e-4 &amp; v6e-8)</text>
 <text x="54" y="136" fill="#CBD5E1" font-size="12.5" class="mono">4-File Engine (trajectory.py • sandbox.py • splicer.py • score_reward.py) | 2,048 Verified MPS Trajectories | 48-Layer LoRA GRPO</text>
 <text x="54" y="164" fill="#94A3B8" font-size="12">Zero Oracle Test Feedback (include_test_feedback=False)  •  100% Observation Loss Masking (loss_mask=0.0)  •  256-Token MXU Alignment</text>
 <rect x="1175" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#10B981" stroke-width="2"/>
@@ -47,7 +47,7 @@
 <text x="64" y="344" fill="#FDE68A" font-size="11.8" font-weight="600">• Zero-Shot Baseline: 16.0% Pass@1 (8/50) vs Teacher 56.0% (28/50)</text>
 <rect x="48" y="368" width="584" height="96" rx="8" fill="#064E3B" fill-opacity="0.45" stroke="#34D399" stroke-width="1.5"/>
 <text x="64" y="392" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1A: Mixed-Policy Splicing (MPS) with Teacher (TPU v6e-16)</text>
-<text x="64" y="414" fill="#E2E8F0" font-size="11.8">• DeepSeek-V3.1-Terminus generates recovery suffix (a*_m..a*_T) from s_m</text>
+<text x="64" y="414" fill="#E2E8F0" font-size="11.8">• DeepSeek-V4.1-Flash generates recovery suffix (a*_m..a*_T) from s_m</text>
 <text x="64" y="434" fill="#E2E8F0" font-size="11.8">• 2,048 verified spliced trajectories (MBPP: 635, HumanEval: 139, KodCode: 1,274)</text>
 <text x="64" y="454" fill="#FDE68A" font-size="11.8" font-weight="600">• Strict loss_mask=0.0 on 811,860 obs tokens; 1.0 on 539,906 recovery tokens</text>
 <rect x="48" y="478" width="584" height="96" rx="8" fill="#4C1D95" fill-opacity="0.45" stroke="#A78BFA" stroke-width="1.5"/>
@@ -77,7 +77,7 @@
 <line x1="735" y1="300.0" x2="1250" y2="300.0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
 <text x="725" y="304.0" fill="#94A3B8" font-size="11.5" text-anchor="end">60%</text>
 <line x1="735" y1="322.3" x2="1250" y2="322.3" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,4"/>
-<text x="745" y="314.3" fill="#FDA4AF" font-size="11.8" font-weight="700">Teacher Zero-Shot Baseline: 56.0% (28/50) — DeepSeek-V3.1-Terminus (v6e-16)</text>
+<text x="745" y="314.3" fill="#FDA4AF" font-size="11.8" font-weight="700">Teacher Zero-Shot Baseline: 56.0% (28/50) — DeepSeek-V4.1-Flash (v6e-16)</text>
 <rect x="768" y="545.7" width="42" height="89.3" rx="4" fill="#64748B" stroke="#F8FAFC" stroke-width="1"/>
 <rect x="814" y="622.0" width="42" height="13.0" rx="4" fill="#475569" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
 <text x="789" y="527.7" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">16.0%</text>
