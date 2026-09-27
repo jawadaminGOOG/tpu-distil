@@ -20,7 +20,7 @@
 <rect x="0" y="0" width="1920" height="1260" fill="url(#bgGrad)"/>
 <rect x="30" y="24" width="1860" height="160" rx="14" fill="url(#hdrGrad)" stroke="#38BDF8" stroke-width="2"/>
 <text x="54" y="68" fill="#F8FAFC" font-size="25" font-weight="800">TPU-Distil: On-Policy Agentic Self-Correction (SCoRe-RL) on Cloud TPU v6e</text>
-<text x="54" y="104" fill="#7DD3FC" font-size="14.5" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V3.1-Terminus (v6e-16) into Qwen3-30B-A3B / Qwen3-Next (v6e-4 &amp; v6e-8)</text>
+<text x="54" y="104" fill="#7DD3FC" font-size="14.5" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V3.1-Terminus (671B/37B, v6e-16) into Qwen3-30B-A3B-Instruct-2507 (30.5B/3.3B, v6e-4 &amp; v6e-8)</text>
 <text x="54" y="136" fill="#CBD5E1" font-size="12.5" class="mono">4-File Engine (trajectory.py • sandbox.py • splicer.py • score_reward.py) | 2,048 Verified MPS Trajectories | 48-Layer LoRA GRPO</text>
 <text x="54" y="164" fill="#94A3B8" font-size="12">Zero Oracle Test Feedback (include_test_feedback=False)  •  100% Observation Loss Masking (loss_mask=0.0)  •  256-Token MXU Alignment</text>
 <rect x="1175" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#10B981" stroke-width="2"/>
