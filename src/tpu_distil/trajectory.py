@@ -71,24 +71,65 @@ class Trajectory:
         )
 
 
-def _default_byte_tokenizer(text: str) -> list[int]:
-    """Deterministic fallback tokenizer when HF tokenizer is not injected."""
-    return [b + 1 for b in text.encode("utf-8")]
+_QWEN3_TOKENIZER_CACHE: Callable[[str], list[int]] | None = None
+
+_FORBIDDEN_TEACHER_TOKENS: tuple[str, ...] = (
+    "<｜begin▁of▁sentence｜>",
+    "<｜end▁of▁sentence｜>",
+    "<｜User｜>",
+    "<｜Assistant｜>",
+    "<|kimi|>",
+    "<|glm|>",
+)
+
+
+def get_qwen3_tokenizer() -> Callable[[str], list[int]]:
+    """Load the official 151,669-vocab Qwen3 HuggingFace BPE tokenizer."""
+    global _QWEN3_TOKENIZER_CACHE
+    if _QWEN3_TOKENIZER_CACHE is not None:
+        return _QWEN3_TOKENIZER_CACHE
+
+    from pathlib import Path
+
+    local_json = Path(__file__).resolve().parents[2] / "data" / "tokenizer" / "tokenizer.json"
+    if local_json.exists():
+        from tokenizers import Tokenizer  # type: ignore
+
+        tok = Tokenizer.from_file(str(local_json))
+
+        def _tok_fn(text: str) -> list[int]:
+            return list(tok.encode(text).ids)
+
+        _tok_fn.get_vocab_size = tok.get_vocab_size  # type: ignore[attr-defined]
+        _QWEN3_TOKENIZER_CACHE = _tok_fn
+        return _QWEN3_TOKENIZER_CACHE
+
+    from transformers import AutoTokenizer  # type: ignore
+
+    hf_tok = AutoTokenizer.from_pretrained("Qwen/Qwen3-30B-A3B-Instruct-2507")
+
+    def _hf_tok_fn(text: str) -> list[int]:
+        return list(hf_tok.encode(text, add_special_tokens=False))
+
+    _hf_tok_fn.get_vocab_size = lambda: len(hf_tok)  # type: ignore[attr-defined]
+    _QWEN3_TOKENIZER_CACHE = _hf_tok_fn
+    return _QWEN3_TOKENIZER_CACHE
 
 
 def serialize_for_qwen3_next(
     traj: Trajectory,
-    tokenize_fn: Callable[[str], list[int]] = _default_byte_tokenizer,
+    tokenize_fn: Callable[[str], list[int]] | None = None,
     pad_multiple: int = 256,
-    pad_token_id: int = 0,
+    pad_token_id: int = 151643,
 ) -> dict[str, list[int] | list[float] | list[str]]:
-    """Serialize a Trajectory to Qwen3-Next token IDs with strict observation masking.
+    """Serialize a Trajectory to Qwen3 token IDs with strict observation masking.
 
     Args:
         traj: Structured trajectory containing student prefix and teacher recovery.
-        tokenize_fn: Qwen3-Next tokenizer callable mapping string -> list[int].
+        tokenize_fn: Qwen3 tokenizer callable mapping string -> list[int].
+            Defaults to the official 151,669-vocab Qwen3 BPE tokenizer.
         pad_multiple: TPU v6e systolic array alignment multiple (must be % 256 == 0).
-        pad_token_id: Token ID used for right-padding to `pad_multiple`.
+        pad_token_id: Token ID used for right-padding to `pad_multiple` (151643 = <|endoftext|>).
 
     Returns:
         Dictionary with 256-aligned `input_ids`, `loss_mask`, and `segment_types`.
@@ -98,11 +139,19 @@ def serialize_for_qwen3_next(
             f"TPU v6e dimension alignment requires pad_multiple % 256 == 0, got {pad_multiple}"
         )
 
+    if tokenize_fn is None:
+        tokenize_fn = get_qwen3_tokenizer()
+
     input_ids: list[int] = []
     loss_mask: list[float] = []
     segment_types: list[str] = []
 
     def _append_span(text: str, mask_val: float, seg_type: str) -> None:
+        for forbidden in _FORBIDDEN_TEACHER_TOKENS:
+            if forbidden in text:
+                raise ValueError(
+                    f"Cross-tokenizer leak detected: forbidden teacher token '{forbidden}' in {seg_type}"
+                )
         ids = tokenize_fn(text)
         input_ids.extend(ids)
         loss_mask.extend([mask_val] * len(ids))

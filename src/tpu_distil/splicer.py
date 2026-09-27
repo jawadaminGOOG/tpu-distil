@@ -30,18 +30,23 @@ def splice_trajectory(
     terminal_reward: float,
     teacher_model: str = "DeepSeek-V4.1-Flash",
     state_s_m_diff: str = "",
+    include_failed_step_in_prefix: bool = False,
 ) -> Trajectory:
     """Splice a Teacher recovery suffix at the student's first error step `m`.
 
-    Preserves `student_traj.steps[:m]` (with `teacher_generated=False`, which will
-    receive `loss_mask=0.0`) and appends `teacher_suffix` (`m..T`, marked with
-    `teacher_generated=True`, which receives `loss_mask=1.0` on assistant tokens).
+    When `include_failed_step_in_prefix=False` (default), preserves `student_traj.steps[:m]`
+    and replaces step `m` with `teacher_suffix`. When `include_failed_step_in_prefix=True`,
+    preserves `student_traj.steps[:m+1]` (including the student's failing step `(a_m^-, o_m^-)`
+    with `teacher_generated=False` / `loss_mask=0.0`) and appends `teacher_suffix` at `m+1`.
     """
     if not teacher_suffix:
         raise ValueError("teacher_suffix must contain at least one recovery Step")
 
     first_err = find_first_error_step(student_traj.steps)
-    splice_idx = first_err if first_err is not None else len(student_traj.steps)
+    if first_err is None:
+        splice_idx = len(student_traj.steps)
+    else:
+        splice_idx = first_err + 1 if include_failed_step_in_prefix else first_err
 
     student_prefix = [
         Step(

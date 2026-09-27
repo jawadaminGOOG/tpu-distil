@@ -86,5 +86,17 @@ def test_tpu_v6e_256_sequence_alignment_enforced() -> None:
     with pytest.raises(ValueError, match="256"):
         serialize_for_qwen3_next(traj, pad_multiple=128)
 
-    out = serialize_for_qwen3_next(traj, pad_multiple=512)
-    assert len(out["input_ids"]) % 512 == 0
+    out_256 = serialize_for_qwen3_next(traj, pad_multiple=256, pad_token_id=151643)
+    out_512 = serialize_for_qwen3_next(traj, pad_multiple=512, pad_token_id=151643)
+    assert len(out_256["input_ids"]) == 256
+    assert len(out_512["input_ids"]) == 512
+
+    non_pad_count = sum(1 for s in out_256["segment_types"] if s != "pad")
+    assert 0 < non_pad_count < 256
+    # Verify exact prefix preservation and right-padding boundary
+    assert out_256["input_ids"][:non_pad_count] == out_512["input_ids"][:non_pad_count]
+    assert out_256["input_ids"][non_pad_count:] == [151643] * (256 - non_pad_count)
+    assert out_512["input_ids"][non_pad_count:] == [151643] * (512 - non_pad_count)
+    assert out_512["loss_mask"][non_pad_count:] == [0.0] * (512 - non_pad_count)
+    assert out_512["segment_types"][non_pad_count:] == ["pad"] * (512 - non_pad_count)
+

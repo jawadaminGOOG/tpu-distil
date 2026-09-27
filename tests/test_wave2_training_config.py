@@ -1,4 +1,4 @@
-"""Wave 2 training configuration, HBM budget, and 4-arm Terminal-Bench evaluation tests."""
+"""Wave 2 training configuration, HBM budget, and 4-arm live Terminal-Bench evaluation tests."""
 
 from __future__ import annotations
 
@@ -20,10 +20,28 @@ def test_wave2_lora_config_and_terminal_bench_gate() -> None:
 
     eval_path = REPO_ROOT / ".agents/wave-2/logs/terminal_bench_eval.json"
     assert eval_path.exists(), ".agents/wave-2/logs/terminal_bench_eval.json must exist"
-    report = json.loads(eval_path.read_text())
+    report = json.loads(eval_path.read_text(encoding="utf-8"))
     assert report["hardware"]["jax_tpu_detected"] is True
     assert report["hardware"]["num_tpu_chips"] == 8
     assert report["hardware"]["mxu_256x256_lora_step_verified"] is True
+
+    # Verify real JAX/Optax Stage 1 cross-entropy loss curves & Stage 2 GRPO loss history
+    for sft_key in ("bc_control", "score_sft"):
+        sft_info = report["stage1_sft"][sft_key]
+        assert len(sft_info["loss_history"]) >= 16
+        assert sft_info["final_sft_loss"] < sft_info["initial_sft_loss"]
+        assert sft_info["moe_router_collapse_events"] == 0
+
+    assert len(report["stage2_grpo"]["grpo_loss_history"]) >= 8
+
+    # Verify all 4 arms have 50 real per-task Terminal-Bench results & live token usage
+    for arm_name in ("Zero-Shot", "BC-Control", "SCoRe-SFT", "SCoRe-RL"):
+        arm_data = report["terminal_bench_4_arm_eval"][arm_name]
+        assert arm_data["live_endpoint_responded"] is True
+        assert arm_data["num_tasks"] == 50
+        assert len(arm_data["task_results"]) == 50
+        assert arm_data["total_prompt_tokens"] > 0
+        assert arm_data["total_completion_tokens"] > 0
 
     # Clause 2.1: >= +10.0% absolute Pass@1 improvement over Zero-Shot on Terminal-Bench
     metrics = report["metrics_summary"]
@@ -44,4 +62,20 @@ def test_wave2_lora_config_and_terminal_bench_gate() -> None:
     assert metrics["peak_hbm_gb_per_chip"] <= 28.0
     assert report["stage2_grpo"]["oom_events"] == 0
     assert report["stage2_grpo"]["moe_router_collapse_events"] == 0
+
+    # Verify saved LoRA .safetensors checkpoints exist and are non-empty
+    for ckpt_name in (
+        "bc_control_lora.safetensors",
+        "score_sft_lora.safetensors",
+        "score_rl_lora.safetensors",
+    ):
+        ckpt_file = REPO_ROOT / ".agents/wave-2/checkpoints" / ckpt_name
+        assert ckpt_file.exists() and ckpt_file.stat().st_size > 1_000_000, (
+            f"Missing or empty trained LoRA checkpoint: {ckpt_file}"
+        )
+
+    # Verify paired bootstrap 95% CI
+    ci_info = metrics.get("paired_bootstrap_95ci", {}).get("score_rl_vs_zero_shot", {})
+    assert ci_info.get("ci_95_low", 0.0) > 0.0
     assert report["gate_verdict"] == "GREEN"
+
