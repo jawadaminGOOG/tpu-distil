@@ -1,4 +1,4 @@
-"""Wave 1 dataset integrity, masking, and customer-defensibility tests (`plans/wave-1-mps-pipeline-qwen3-next-tests.md`)."""
+"""Dataset integrity, masking, and customer-defensibility tests."""
 
 from __future__ import annotations
 
@@ -14,13 +14,14 @@ from tpu_distil.trajectory import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_wave1_mps_and_bc_datasets_meet_all_gate_clauses() -> None:
+def test_mps_and_bc_datasets_meet_all_gate_clauses() -> None:
     mps_path = REPO_ROOT / "data/score_sft_mps.jsonl"
     bc_path = REPO_ROOT / "data/bc_control.jsonl"
-    summary_path = REPO_ROOT / ".agents/wave-1/logs/mps_collection_summary.json"
+    summary_matches = sorted((REPO_ROOT / ".agents").glob("*/logs/mps_collection_summary.json"))
     assert mps_path.exists(), "data/score_sft_mps.jsonl must exist"
     assert bc_path.exists(), "data/bc_control.jsonl must exist"
-    assert summary_path.exists(), ".agents/wave-1/logs/mps_collection_summary.json must exist"
+    assert summary_matches, "mps_collection_summary.json must exist"
+    summary_path = summary_matches[-1]
 
     mps_lines = [line for line in mps_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     bc_lines = [line for line in bc_path.read_text(encoding="utf-8").splitlines() if line.strip()]

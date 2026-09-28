@@ -1,4 +1,4 @@
-"""Wave 2 training configuration, HBM budget, and 4-arm live Terminal-Bench evaluation tests."""
+"""Training configuration, HBM budget, and 4-arm live Terminal-Bench evaluation tests."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from tpu_distil.score_reward import LoRAConfig
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_wave2_lora_config_and_terminal_bench_gate() -> None:
+def test_lora_config_and_terminal_bench_gate() -> None:
     cfg = LoRAConfig()
     assert cfg.freeze_moe_router is True
     assert "gate_proj" not in cfg.target_modules
@@ -18,8 +18,9 @@ def test_wave2_lora_config_and_terminal_bench_gate() -> None:
     assert cfg.alpha == 128
     assert cfg.pad_multiple == 256
 
-    eval_path = REPO_ROOT / ".agents/wave-2/logs/terminal_bench_eval.json"
-    assert eval_path.exists(), ".agents/wave-2/logs/terminal_bench_eval.json must exist"
+    eval_matches = sorted((REPO_ROOT / ".agents").glob("*/logs/terminal_bench_eval.json"))
+    assert eval_matches, "terminal_bench_eval.json must exist"
+    eval_path = eval_matches[-1]
     report = json.loads(eval_path.read_text(encoding="utf-8"))
     assert report["hardware"]["jax_tpu_detected"] is True
     assert report["hardware"]["num_tpu_chips"] == 8
@@ -64,12 +65,13 @@ def test_wave2_lora_config_and_terminal_bench_gate() -> None:
     assert report["stage2_grpo"]["moe_router_collapse_events"] == 0
 
     # Verify saved LoRA .safetensors checkpoints exist and are non-empty
+    ckpt_dir = eval_path.parents[1] / "checkpoints"
     for ckpt_name in (
         "bc_control_lora.safetensors",
         "score_sft_lora.safetensors",
         "score_rl_lora.safetensors",
     ):
-        ckpt_file = REPO_ROOT / ".agents/wave-2/checkpoints" / ckpt_name
+        ckpt_file = ckpt_dir / ckpt_name
         assert ckpt_file.exists() and ckpt_file.stat().st_size > 1_000_000, (
             f"Missing or empty trained LoRA checkpoint: {ckpt_file}"
         )

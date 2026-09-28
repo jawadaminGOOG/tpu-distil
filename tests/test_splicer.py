@@ -1,4 +1,4 @@
-"""Unit tests for `tpu_distil.splicer` (Wave 0 Clause 0.2)."""
+"""Unit tests for `tpu_distil.splicer`."""
 
 from __future__ import annotations
 

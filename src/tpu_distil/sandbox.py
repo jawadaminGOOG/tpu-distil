@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -95,71 +96,14 @@ class ContainerSandbox:
         if (tdir / "tests").exists():
             shutil.copytree(tdir / "tests", test_dir, dirs_exist_ok=True)
 
-        for item in tdir.iterdir():
-            if item.name in (
-                "solution.sh",
-                "tests",
-                "run-tests.sh",
-                "docker-compose.yaml",
-                "Dockerfile",
-                "task.yaml",
-            ):
-                continue
-            if item.name == "task-deps" and item.is_dir():
-                shutil.copytree(item, app_dir, dirs_exist_ok=True)
-            elif item.is_dir():
-                shutil.copytree(item, app_dir / item.name, dirs_exist_ok=True)
-            else:
-                shutil.copy2(item, app_dir / item.name)
+        cache_root = Path("/tmp/tpu_distil_image_cache_v2") / tdir.name
+        cache_app = cache_root / "app"
+        cache_wd_file = cache_root / "workdir_rel.txt"
 
-        df_path = tdir / "Dockerfile"
-        df_txt = df_path.read_text(errors="ignore") if df_path.exists() else ""
-        for line in df_txt.splitlines():
-            parts = line.strip().split()
-            if len(parts) >= 3 and parts[0].upper() in ("COPY", "ADD"):
-                srcs, dst = parts[1:-1], parts[-1]
-                if dst in (".", "./", "/app", "/app/"):
-                    dst_p = app_dir
-                elif dst.startswith("/app/"):
-                    dst_p = app_dir / dst[5:]
-                elif dst.startswith("/"):
-                    dst_p = app_dir / dst.lstrip("/")
-                else:
-                    dst_p = app_dir / dst
-                for s in srcs:
-                    if s.startswith("--"):
-                        continue
-                    src_p = tdir / s.rstrip("/.")
-                    if src_p.exists():
-                        if src_p.is_dir():
-                            shutil.copytree(src_p, dst_p, dirs_exist_ok=True)
-                        elif dst.endswith("/") or dst in (".", "./", "/app", "/app/"):
-                            dst_p.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(src_p, dst_p / src_p.name)
-                        else:
-                            dst_p.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(src_p, dst_p)
-
-        # Ensure Dockerfile `COPY . /app` never leaks solution.sh or test suites into /app
-        shutil.rmtree(app_dir / "tests", ignore_errors=True)
-        for forbidden in (
-            "solution.sh",
-            "solution.yaml",
-            "run-tests.sh",
-            "docker-compose.yaml",
-            "Dockerfile",
-            "task.yaml",
-        ):
-            (app_dir / forbidden).unlink(missing_ok=True)
-
-
-        (app_dir / "tmp").mkdir(parents=True, exist_ok=True)
-        (app_dir / "etc").mkdir(parents=True, exist_ok=True)
-        (app_dir / "opt").mkdir(parents=True, exist_ok=True)
-
-        def _rewrite_paths(text: str) -> str:
+        def _rewrite_paths(text: str, target_app: Path) -> str:
             t = (
-                text.replace(str(app_dir), "/app")
+                text.replace(str(target_app), "/app")
+                .replace(str(cache_app), "/app")
                 .replace("-C / ", "-C /app ")
                 .replace("/app/protected", "/protected")
                 .replace("/app/opt/", "/opt/")
@@ -170,60 +114,169 @@ class ContainerSandbox:
                 .replace("/etc/", "/app/etc/")
             )
             t = re.sub(r"/tmp/(?!tpu_distil_)", "/app/tmp/", t)
-            return t.replace("/app", str(app_dir))
+            return t.replace("/app", str(target_app))
 
-        for sf in list(app_dir.rglob("*.sh")) + list(app_dir.rglob("*.py")):
-            if sf.is_file():
-                try:
-                    sf.write_text(_rewrite_paths(sf.read_text(errors="ignore")))
-                except Exception:
-                    pass
-        for tf in test_dir.rglob("*.py"):
-            if tf.is_file():
-                try:
-                    tf.write_text(_rewrite_paths(tf.read_text(errors="ignore")))
-                except Exception:
-                    pass
-
-        env = sbx._build_env()
-        joined = re.sub(r"\\\s*\n", " ", df_txt)
-        for line in joined.splitlines():
-            s = line.strip()
-            if s.upper().startswith("RUN "):
-                cmd = s[4:].strip()
-                if any(
-                    k in cmd
-                    for k in (
-                        "apt-get",
-                        "apt ",
-                        "apk ",
-                        "yum ",
-                        "dnf ",
-                        "pip install",
-                        "pip3 install",
-                        "conda",
-                        "cargo",
-                        "rustup",
-                        "npm ",
-                        "sudo",
-                        "nohup",
-                    )
+        if not (cache_root / ".built").exists():
+            shutil.rmtree(cache_root, ignore_errors=True)
+            cache_app.mkdir(parents=True, exist_ok=True)
+            for item in tdir.iterdir():
+                if item.name in (
+                    "solution.sh",
+                    "tests",
+                    "run-tests.sh",
+                    "docker-compose.yaml",
+                    "Dockerfile",
+                    "task.yaml",
                 ):
                     continue
-                sbx._exec_safe(
-                    ["/bin/bash", "-c", _rewrite_paths(cmd)],
-                    cwd=app_dir,
-                    env=env,
-                    timeout_s=20.0,
-                )
+                if item.name == "task-deps" and item.is_dir():
+                    shutil.copytree(item, cache_app, dirs_exist_ok=True)
+                elif item.is_dir():
+                    shutil.copytree(item, cache_app / item.name, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, cache_app / item.name)
 
-        for line in df_txt.splitlines():
-            if line.strip().upper().startswith("WORKDIR "):
-                wd = _rewrite_paths(line.strip()[8:].strip())
-                if wd.startswith(str(app_dir)):
-                    sbx.workdir = Path(wd)
-                    sbx.workdir.mkdir(parents=True, exist_ok=True)
+            (cache_app / "tmp").mkdir(parents=True, exist_ok=True)
+            (cache_app / "etc").mkdir(parents=True, exist_ok=True)
+            (cache_app / "opt").mkdir(parents=True, exist_ok=True)
 
+            df_path = tdir / "Dockerfile"
+            df_txt = df_path.read_text(errors="ignore") if df_path.exists() else ""
+            joined = re.sub(r"\\\s*\n", " ", df_txt)
+            cur_wd = cache_app
+            sbx.app_dir = cache_app
+            env_build = sbx._build_env()
+
+            for raw_line in joined.splitlines():
+                s = raw_line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                upper_s = s.upper()
+                if upper_s.startswith("WORKDIR "):
+                    wd_raw = s[8:].strip()
+                    if wd_raw in ("/app", "/app/"):
+                        cur_wd = cache_app
+                    elif wd_raw.startswith("/app/"):
+                        cur_wd = cache_app / wd_raw[5:].rstrip("/")
+                    elif wd_raw.startswith("/"):
+                        cur_wd = cache_app / wd_raw.lstrip("/").rstrip("/")
+                    else:
+                        cur_wd = (cur_wd / wd_raw).resolve()
+                    cur_wd.mkdir(parents=True, exist_ok=True)
+                elif upper_s.startswith(("COPY ", "ADD ")):
+                    parts = s.split()
+                    if len(parts) >= 3:
+                        srcs, dst = parts[1:-1], parts[-1]
+                        if dst in (".", "./"):
+                            dst_p = cur_wd
+                        elif dst in ("/app", "/app/"):
+                            dst_p = cache_app
+                        elif dst.startswith("/app/"):
+                            dst_p = cache_app / dst[5:]
+                        elif dst.startswith("/"):
+                            dst_p = cache_app / dst.lstrip("/")
+                        else:
+                            dst_p = cur_wd / dst
+                        for src_tok in srcs:
+                            if src_tok.startswith("--"):
+                                continue
+                            src_p = tdir / src_tok.rstrip("/.")
+                            if src_p.exists():
+                                if src_p.is_dir():
+                                    shutil.copytree(src_p, dst_p, dirs_exist_ok=True)
+                                elif dst.endswith("/") or dst in (".", "./", "/app", "/app/"):
+                                    dst_p.mkdir(parents=True, exist_ok=True)
+                                    shutil.copy2(src_p, dst_p / src_p.name)
+                                else:
+                                    dst_p.parent.mkdir(parents=True, exist_ok=True)
+                                    shutil.copy2(src_p, dst_p)
+                elif upper_s.startswith("RUN "):
+                    cmd = s[4:].strip()
+                    if any(
+                        k in cmd
+                        for k in (
+                            "apt-get",
+                            "apt ",
+                            "apk ",
+                            "yum ",
+                            "dnf ",
+                            "pip install",
+                            "pip3 install",
+                            "conda",
+                            "cargo",
+                            "rustup",
+                            "npm ",
+                            "sudo",
+                            "nohup",
+                        )
+                    ):
+                        continue
+                    for sf in list(cache_app.glob("*.sh")) + list(cache_app.glob("*.py")):
+                        if sf.is_file():
+                            try:
+                                sf.write_text(_rewrite_paths(sf.read_text(errors="ignore"), cache_app))
+                            except Exception:
+                                pass
+                    run_cmd = _rewrite_paths(cmd, cache_app)
+                    if run_cmd.endswith("&& make") or run_cmd == "make":
+                        run_cmd = run_cmd + " -j16"
+                    sbx._exec_safe(
+                        ["/bin/bash", "-c", run_cmd],
+                        cwd=cur_wd,
+                        env=env_build,
+                        timeout_s=90.0,
+                    )
+
+            for sub in ("john/src", "john/doc", "john/.git", "frotz/src", "frotz/.git"):
+                shutil.rmtree(cache_app / sub, ignore_errors=True)
+            shutil.rmtree(cache_app / "tests", ignore_errors=True)
+            for forbidden in (
+                "solution.sh",
+                "solution.yaml",
+                "run-tests.sh",
+                "docker-compose.yaml",
+                "Dockerfile",
+                "task.yaml",
+            ):
+                (cache_app / forbidden).unlink(missing_ok=True)
+
+            try:
+                rel_wd = str(cur_wd.relative_to(cache_app))
+            except ValueError:
+                rel_wd = "."
+            cache_wd_file.write_text(rel_wd, encoding="utf-8")
+            (cache_root / ".built").write_text("ok", encoding="utf-8")
+
+        for item in cache_app.iterdir():
+            dst_item = app_dir / item.name
+            if item.name in ("john", "frotz") and item.is_dir():
+                if not dst_item.exists():
+                    dst_item.symlink_to(item)
+            elif item.is_dir():
+                shutil.copytree(item, dst_item, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dst_item)
+        sbx.app_dir = app_dir
+        rel_wd = cache_wd_file.read_text(encoding="utf-8").strip() if cache_wd_file.exists() else "."
+        if rel_wd.startswith(("john", "frotz")):
+            rel_wd = "."
+        sbx.workdir = app_dir if rel_wd in ("", ".") else (app_dir / rel_wd)
+        sbx.workdir.mkdir(parents=True, exist_ok=True)
+
+        for sf in list(app_dir.glob("*.sh")) + list(app_dir.glob("*.py")):
+            if sf.is_file():
+                try:
+                    sf.write_text(_rewrite_paths(sf.read_text(errors="ignore"), app_dir))
+                except Exception:
+                    pass
+        test_out_py = test_dir / "test_outputs.py"
+        if test_out_py.is_file():
+            try:
+                test_out_py.write_text(_rewrite_paths(test_out_py.read_text(errors="ignore"), app_dir))
+            except Exception:
+                pass
+
+        env = sbx._build_env()
         # Initialize git tracking if not already a git repo so capture_state_diff works
         if not any(sbx.workdir.rglob(".git")):
             sbx._exec_safe(
@@ -281,7 +334,7 @@ class ContainerSandbox:
 
     def _build_env(self) -> dict[str, str]:
         shim_dir = Path("/tmp/tpu_distil_rootless_shims")
-        if not (shim_dir / "gpg").exists():
+        if not (shim_dir / "zip").exists():
             shim_dir.mkdir(parents=True, exist_ok=True)
             for tool in ("apt-get", "apt"):
                 p = shim_dir / tool
@@ -296,10 +349,42 @@ class ContainerSandbox:
                 encoding="utf-8",
             )
             gpg_p.chmod(0o755)
+            zip_p = shim_dir / "zip"
+            zip_p.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os, sys, zipfile\n"
+                "args = [a for a in sys.argv[1:] if not a.startswith('-')]\n"
+                "if len(args) >= 2:\n"
+                "    zpath, srcs = args[0], args[1:]\n"
+                "    with zipfile.ZipFile(zpath, 'w', compression=zipfile.ZIP_STORED) as zf:\n"
+                "        for s in srcs:\n"
+                "            if os.path.isdir(s):\n"
+                "                for r, _, fs in os.walk(s):\n"
+                "                    for f in fs:\n"
+                "                        fp = os.path.join(r, f)\n"
+                "                        zf.write(fp, arcname=os.path.basename(fp))\n"
+                "            elif os.path.exists(s):\n"
+                "                zf.write(s, arcname=os.path.basename(s))\n",
+                encoding="utf-8",
+            )
+            zip_p.chmod(0o755)
+            unzip_p = shim_dir / "unzip"
+            unzip_p.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys, zipfile\n"
+                "args = [a for a in sys.argv[1:] if not a.startswith('-')]\n"
+                "if args:\n"
+                "    with zipfile.ZipFile(args[0], 'r') as zf:\n"
+                "        zf.extractall('.')\n",
+                encoding="utf-8",
+            )
+            unzip_p.chmod(0o755)
         env = dict(os.environ)
         env["PIP_BREAK_SYSTEM_PACKAGES"] = "1"
         env["PATH"] = f"{shim_dir}:{os.path.expanduser('~/.local/bin')}:{env.get('PATH', '')}"
-        py_paths = [str(self.app_dir)]
+        py_paths: list[str] = []
+        if not (self.app_dir / "code.py").exists():
+            py_paths.append(str(self.app_dir))
         if self.test_dir is not None:
             env["TEST_DIR"] = str(self.test_dir)
             py_paths.append(str(self.test_dir))
@@ -312,12 +397,12 @@ class ContainerSandbox:
         """Run the hidden Terminal-Bench `tests/test_outputs.py` suite if present."""
         if self.test_dir is None or not (self.test_dir / "test_outputs.py").exists():
             return 0, 0, ""
-        pytest_bin = os.path.expanduser("~/.local/bin/pytest")
-        if not os.path.exists(pytest_bin):
-            pytest_bin = "pytest"
         rc, out_s, err_s = self._exec_safe(
             [
-                pytest_bin,
+                sys.executable,
+                "-P",
+                "-m",
+                "pytest",
                 "-vv",
                 "--tb=short",
                 str(self.test_dir / "test_outputs.py"),
@@ -339,6 +424,10 @@ class ContainerSandbox:
         timeout = timeout_s if timeout_s is not None else self.default_timeout_s
         if not action_cmd or not action_cmd.strip():
             return SandboxResult(stdout="", stderr="Empty action command", exit_code=2)
+        try:
+            (self.app_dir / "john" / "run" / "john.pot").unlink(missing_ok=True)
+        except Exception:
+            pass
         t_cmd = (
             action_cmd.replace(str(self.app_dir), "/app")
             .replace("-C / ", "-C /app ")

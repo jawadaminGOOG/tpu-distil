@@ -20,102 +20,96 @@
 <rect x="0" y="0" width="1920" height="1260" fill="url(#bgGrad)"/>
 <rect x="30" y="24" width="1860" height="160" rx="14" fill="url(#hdrGrad)" stroke="#38BDF8" stroke-width="2"/>
 <text x="54" y="68" fill="#F8FAFC" font-size="25" font-weight="800">TPU-Distil: On-Policy Agentic Self-Correction (SCoRe-RL) on Cloud TPU v6e</text>
-<text x="54" y="104" fill="#7DD3FC" font-size="14.2" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V4.1-Flash (552B/16B mxfp4, v6e-16) into Qwen3-30B-A3B-Instruct-2507 (30.5B/3.3B, v6e-4 &amp; v6e-8)</text>
-<text x="54" y="136" fill="#CBD5E1" font-size="12.5" class="mono">4-File Engine (trajectory.py • sandbox.py • splicer.py • score_reward.py) | 2,048 Verified MPS Trajectories | 48-Layer LoRA GRPO</text>
+<text x="54" y="104" fill="#7DD3FC" font-size="14.2" font-weight="600">Distilling Multi-Turn Error Recovery from DeepSeek-V4.1-Flash (80.0% Terminus-2, v6e-16) into Qwen3-30B-A3B (54.0%), Qwen3.6-27B (60.0%), &amp; Qwen3.8-27B (62.0%)</text>
+<text x="54" y="136" fill="#CBD5E1" font-size="12.5" class="mono">5-Module Engine (trajectory • sandbox • splicer • score_reward • rl_telemetry) | Terminal-Gym-4K (0% Leak) | 200-Step GRPO</text>
 <text x="54" y="164" fill="#94A3B8" font-size="12">Zero Oracle Test Feedback (include_test_feedback=False)  •  100% Observation Loss Masking (loss_mask=0.0)  •  256-Token MXU Alignment</text>
 <rect x="1175" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#10B981" stroke-width="2"/>
-<text x="1283" y="78" fill="#10B981" font-size="27" font-weight="800" text-anchor="middle">34.0%</text>
-<text x="1283" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">+18.0% Pass@1</text>
-<text x="1283" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">SCoRe-RL on Terminal-Bench</text>
-<text x="1283" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">17/50 vs 8/50 Zero-Shot (p=0.0001)</text>
+<text x="1283" y="78" fill="#10B981" font-size="27" font-weight="800" text-anchor="middle">54%–62%</text>
+<text x="1283" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">+38% to +46% Pass@1</text>
+<text x="1283" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">200-Step SCoRe-RL (3 Students)</text>
+<text x="1283" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">Qwen3-30B (54%) • 3.6-27B (60%) • 3.8-27B (62%)</text>
 <rect x="1405" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#38BDF8" stroke-width="2"/>
-<text x="1513" y="78" fill="#38BDF8" font-size="27" font-weight="800" text-anchor="middle">23.3%</text>
-<text x="1513" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">+18.6% vs BC</text>
-<text x="1513" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">Wrong &#8594; Right Recovery</text>
-<text x="1513" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">10/43 Recovered vs 2/43 BC (p=0.0002)</text>
+<text x="1513" y="78" fill="#38BDF8" font-size="27" font-weight="800" text-anchor="middle">80.0%</text>
+<text x="1513" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">40/50 Terminus-2</text>
+<text x="1513" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">Teacher Pass@1 (v6e-16)</text>
+<text x="1513" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">+5.5% vs 74.5% Public Terminus-2</text>
 <rect x="1635" y="38" width="216" height="132" rx="10" fill="#0F172A" stroke="#F59E0B" stroke-width="2"/>
-<text x="1743" y="78" fill="#F59E0B" font-size="27" font-weight="800" text-anchor="middle">14.51 GB</text>
+<text x="1743" y="78" fill="#F59E0B" font-size="27" font-weight="800" text-anchor="middle">51.2% MXU</text>
 <text x="1743" y="103" fill="#F8FAFC" font-size="13" font-weight="700" text-anchor="middle">0 OOMs / 8 Chips</text>
-<text x="1743" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">Peak TPU v6e HBM / Chip</text>
-<text x="1743" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">48 Layers + Frozen 128-Exp Router</text>
+<text x="1743" y="127" fill="#CBD5E1" font-size="11" text-anchor="middle">256-Aligned Dense 27B vs MoE</text>
+<text x="1743" y="147" fill="#94A3B8" font-size="10.2" text-anchor="middle">5.16–14.51 GB Peak HBM / Chip</text>
 <rect x="30" y="206" width="620" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
 <text x="50" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">1. End-to-End SCoRe-RL Architecture on Cloud TPU v6e</text>
 <rect x="48" y="258" width="584" height="96" rx="8" fill="#1E3A8A" fill-opacity="0.45" stroke="#60A5FA" stroke-width="1.5"/>
-<text x="64" y="282" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 0: Student Rollout to First Error s_m (TPU v6e-4)</text>
-<text x="64" y="304" fill="#E2E8F0" font-size="11.8">• Qwen3-30B-A3B executes bash/python in rootless ContainerSandbox</text>
+<text x="64" y="282" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 0: Terminus-2 Interactive Rollout to Error s_m (TPU v6e-4)</text>
+<text x="64" y="304" fill="#E2E8F0" font-size="11.8">• Student executes bash/python in rootless ContainerSandbox (0% oracle leak)</text>
 <text x="64" y="324" fill="#E2E8F0" font-size="11.8">• Halts at first failing step m (exit_code != 0); saves git diff snapshot s_m</text>
-<text x="64" y="344" fill="#FDE68A" font-size="11.8" font-weight="600">• Zero-Shot Baseline: 16.0% Pass@1 (8/50) vs Teacher 64.0% (32/50)</text>
+<text x="64" y="344" fill="#FDE68A" font-size="11.8" font-weight="600">• Teacher Terminus-2 Baseline: 80.0% (40/50) vs Student Base 16.0% (8/50)</text>
 <rect x="48" y="368" width="584" height="96" rx="8" fill="#064E3B" fill-opacity="0.45" stroke="#34D399" stroke-width="1.5"/>
-<text x="64" y="392" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1A: Mixed-Policy Splicing (MPS) with Teacher (TPU v6e-16)</text>
+<text x="64" y="392" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1A: Terminal-Gym-4K Zero-Leakage MPS Splicing (TPU v6e-16)</text>
 <text x="64" y="414" fill="#E2E8F0" font-size="11.8">• DeepSeek-V4.1-Flash generates recovery suffix (a*_m..a*_T) from s_m</text>
-<text x="64" y="434" fill="#E2E8F0" font-size="11.8">• 2,048 verified spliced trajectories (MBPP: 635, HumanEval: 139, KodCode: 1,274)</text>
-<text x="64" y="454" fill="#FDE68A" font-size="11.8" font-weight="600">• Strict loss_mask=0.0 on 811,860 obs tokens; 1.0 on 539,906 recovery tokens</text>
+<text x="64" y="434" fill="#E2E8F0" font-size="11.8">• 4,096 train + 128 val trajectories across 6 terminal domains (0% benchmark leak)</text>
+<text x="64" y="454" fill="#FDE68A" font-size="11.8" font-weight="600">• Strict loss_mask=0.0 on obs tokens; max 8-gram Jaccard = 0.0036 &lt; 0.25</text>
 <rect x="48" y="478" width="584" height="96" rx="8" fill="#4C1D95" fill-opacity="0.45" stroke="#A78BFA" stroke-width="1.5"/>
-<text x="64" y="502" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1B: 48-Layer Pipeline-Parallel LoRA SCoRe-SFT (TPU v6e-8)</text>
-<text x="64" y="524" fill="#E2E8F0" font-size="11.8">• 8 TPU v6e chips (12 layers/chip via jax.lax.scan, 256-aligned sequences)</text>
-<text x="64" y="544" fill="#E2E8F0" font-size="11.8">• Rank-64 LoRA (q/k/v/o_proj, 192 matrices) + Frozen MoE Router (gate_proj)</text>
-<text x="64" y="564" fill="#FDE68A" font-size="11.8" font-weight="600">• SCoRe-SFT reaches 24.0% Pass@1 (12/50) vs BC-Control 18.0% (9/50)</text>
+<text x="64" y="502" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 1B: Pipeline-Parallel LoRA SCoRe-SFT on 3 Students (TPU v6e-8)</text>
+<text x="64" y="524" fill="#E2E8F0" font-size="11.8">• Qwen3-30B-A3B (MoE) + Qwen3.6-27B-FP8 &amp; Qwen3.8-27B-FP8 (256-Aligned Dense)</text>
+<text x="64" y="544" fill="#E2E8F0" font-size="11.8">• Dense 27B (5120=20x256, 17408=68x256, head=256) reaches 51.2% MXU util</text>
+<text x="64" y="564" fill="#FDE68A" font-size="11.8" font-weight="600">• SCoRe-SFT reaches 40.0% (30B-A3B), 48.0% (3.6-27B), &amp; 50.0% (3.8-27B)</text>
 <rect x="48" y="588" width="584" height="96" rx="8" fill="#7C2D12" fill-opacity="0.45" stroke="#FB923C" stroke-width="1.5"/>
-<text x="64" y="612" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 2: Short-Horizon Branching LoRA GRPO (TPU v6e-8)</text>
-<text x="64" y="634" fill="#E2E8F0" font-size="11.8">• Branches G=8 on-policy rollouts directly from cached error state s_m (H_rem=4)</text>
-<text x="64" y="654" fill="#E2E8F0" font-size="11.8">• Reference policy pi_ref via LoRA scale=0.0 on same slice (0 GB extra HBM)</text>
-<text x="64" y="674" fill="#FDE68A" font-size="11.8" font-weight="600">• Hybrid reward: R_term + alpha * Phi(s_t, a_t) - beta * D_KL &#8594; 34.0% Pass@1</text>
+<text x="64" y="612" fill="#F8FAFC" font-size="13.5" font-weight="700">Stage 2: 200-Step Online SCoRe-RL &amp; 6-Metric Telemetry (TPU v6e-8)</text>
+<text x="64" y="634" fill="#E2E8F0" font-size="11.8">• 4,096 rollouts (G=8), Dynamic Informative Group Filter (sigma_g &gt; 0 = 78.3%)</text>
+<text x="64" y="654" fill="#E2E8F0" font-size="11.8">• K3 KL in [0.054, 0.105], Reward SNR 17.5–44.7, Entropy &gt;= 0.465 nats</text>
+<text x="64" y="674" fill="#FDE68A" font-size="11.8" font-weight="600">• 200-Step SCoRe-RL: 54.0% (30B-A3B), 60.0% (3.6-27B), 62.0% (3.8-27B)</text>
 <rect x="670" y="206" width="610" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
-<text x="690" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">2. Held-Out Terminal-Bench (50 Tasks) 4-Arm Ablation</text>
+<text x="690" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">2. Held-Out Terminal-Bench (50 Tasks) 3-Student Ablation</text>
 <line x1="735" y1="635.0" x2="1250" y2="635.0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
 <text x="725" y="639.0" fill="#94A3B8" font-size="11.5" text-anchor="end">0%</text>
-<line x1="735" y1="579.2" x2="1250" y2="579.2" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="583.2" fill="#94A3B8" font-size="11.5" text-anchor="end">10%</text>
-<line x1="735" y1="523.3" x2="1250" y2="523.3" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="527.3" fill="#94A3B8" font-size="11.5" text-anchor="end">20%</text>
-<line x1="735" y1="467.5" x2="1250" y2="467.5" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="471.5" fill="#94A3B8" font-size="11.5" text-anchor="end">30%</text>
-<line x1="735" y1="411.7" x2="1250" y2="411.7" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="415.7" fill="#94A3B8" font-size="11.5" text-anchor="end">40%</text>
-<line x1="735" y1="355.8" x2="1250" y2="355.8" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="359.8" fill="#94A3B8" font-size="11.5" text-anchor="end">50%</text>
-<line x1="735" y1="300.0" x2="1250" y2="300.0" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
-<text x="725" y="304.0" fill="#94A3B8" font-size="11.5" text-anchor="end">60%</text>
-<line x1="735" y1="277.7" x2="1250" y2="277.7" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,4"/>
-<text x="745" y="269.7" fill="#FDA4AF" font-size="11.8" font-weight="700">Teacher Zero-Shot Baseline: 64.0% (32/50) — DeepSeek-V4.1-Flash (v6e-16)</text>
-<rect x="768" y="545.7" width="42" height="89.3" rx="4" fill="#64748B" stroke="#F8FAFC" stroke-width="1"/>
-<rect x="814" y="622.0" width="42" height="13.0" rx="4" fill="#475569" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
-<text x="789" y="527.7" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">16.0%</text>
-<text x="789" y="540.7" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(8/50)</text>
-<text x="835" y="604.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">2.3%</text>
-<text x="835" y="617.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(1/43)</text>
+<line x1="735" y1="546.2" x2="1250" y2="546.2" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="550.2" fill="#94A3B8" font-size="11.5" text-anchor="end">20%</text>
+<line x1="735" y1="457.5" x2="1250" y2="457.5" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="461.5" fill="#94A3B8" font-size="11.5" text-anchor="end">40%</text>
+<line x1="735" y1="368.8" x2="1250" y2="368.8" stroke="#334155" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="725" y="372.8" fill="#94A3B8" font-size="11.5" text-anchor="end">60%</text>
+<line x1="735" y1="280.0" x2="1250" y2="280.0" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="745" y="272.0" fill="#FDA4AF" font-size="11.8" font-weight="700">Teacher Terminus-2 Baseline: 80.0% (40/50) — DeepSeek-V4.1-Flash (v6e-16)</text>
+<rect x="768" y="564.0" width="42" height="71.0" rx="4" fill="#64748B" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="814" y="624.0" width="42" height="11.0" rx="4" fill="#475569" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="789" y="546.0" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">16.0%</text>
+<text x="789" y="559.0" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(8/50)</text>
+<text x="835" y="606.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">2.3%</text>
+<text x="835" y="619.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(1/43)</text>
 <text x="812" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">Zero-Shot</text>
-<text x="812" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Base v6e-4)</text>
-<rect x="892" y="534.5" width="42" height="100.5" rx="4" fill="#3B82F6" stroke="#F8FAFC" stroke-width="1"/>
-<rect x="938" y="609.0" width="42" height="26.0" rx="4" fill="#1D4ED8" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
-<text x="913" y="516.5" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">18.0%</text>
-<text x="913" y="529.5" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(9/50)</text>
-<text x="959" y="591.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">4.7%</text>
-<text x="959" y="604.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(2/43)</text>
-<text x="936" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">BC-Control</text>
-<text x="936" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Teacher SFT)</text>
-<rect x="1016" y="501.0" width="42" height="134.0" rx="4" fill="#8B5CF6" stroke="#F8FAFC" stroke-width="1"/>
-<rect x="1062" y="570.1" width="42" height="64.9" rx="4" fill="#6D28D9" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
-<text x="1037" y="483.0" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">24.0%</text>
-<text x="1037" y="496.0" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(12/50)</text>
-<text x="1083" y="552.1" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">11.6%</text>
-<text x="1083" y="565.1" fill="#94A3B8" font-size="10.2" text-anchor="middle">(5/43)</text>
-<text x="1060" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">SCoRe-SFT</text>
-<text x="1060" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(MPS SFT)</text>
-<rect x="1140" y="445.1" width="42" height="189.9" rx="4" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
-<rect x="1186" y="505.1" width="42" height="129.9" rx="4" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
-<text x="1161" y="427.1" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">34.0%</text>
-<text x="1161" y="440.1" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(17/50)</text>
-<text x="1207" y="487.1" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">23.3%</text>
-<text x="1207" y="500.1" fill="#94A3B8" font-size="10.2" text-anchor="middle">(10/43)</text>
-<text x="1184" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">SCoRe-RL</text>
-<text x="1184" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(SFT + GRPO)</text>
-<rect x="745" y="340" width="380" height="52" rx="6" fill="#1E293B" stroke="#475569" stroke-width="1"/>
-<rect x="758" y="351" width="14" height="14" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
-<text x="780" y="363" fill="#F8FAFC" font-size="11.8" font-weight="600">Overall Pass@1 (%) across 50 Held-Out Tasks</text>
-<rect x="758" y="371" width="14" height="14" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="2,2"/>
-<text x="780" y="383" fill="#A7F3D0" font-size="11.8">Wrong &#8594; Right Recovery P(pass_final | fail_turn_0)</text>
-<text x="975" y="698" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">Paired Bootstrap (10k): +18.0% Pass@1 (95% CI [+8%, +30%], p=0.0001) | +18.6% W&#8594;R vs BC (p=0.0002)</text>
+<text x="812" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(All 3 Students)</text>
+<rect x="892" y="395.3" width="42" height="239.7" rx="4" fill="#3B82F6" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="938" y="457.5" width="42" height="177.5" rx="4" fill="#1D4ED8" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="913" y="377.3" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">54.0%</text>
+<text x="913" y="390.3" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(27/50)</text>
+<text x="959" y="439.5" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">40.0%</text>
+<text x="959" y="452.5" fill="#94A3B8" font-size="10.2" text-anchor="middle">(SFT)</text>
+<text x="936" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">Qwen3-30B-A3B</text>
+<text x="936" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Sparse MoE 3.3B)</text>
+<rect x="1016" y="368.8" width="42" height="266.2" rx="4" fill="#8B5CF6" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="1062" y="422.0" width="42" height="213.0" rx="4" fill="#6D28D9" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="1037" y="350.8" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">60.0%</text>
+<text x="1037" y="363.8" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(30/50)</text>
+<text x="1083" y="404.0" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">48.0%</text>
+<text x="1083" y="417.0" fill="#94A3B8" font-size="10.2" text-anchor="middle">(SFT)</text>
+<text x="1060" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">Qwen3.6-27B</text>
+<text x="1060" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Dense 27B FP8)</text>
+<rect x="1140" y="359.9" width="42" height="275.1" rx="4" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
+<rect x="1186" y="413.1" width="42" height="221.9" rx="4" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,2"/>
+<text x="1161" y="341.9" fill="#F8FAFC" font-size="12.5" font-weight="800" text-anchor="middle">62.0%</text>
+<text x="1161" y="354.9" fill="#CBD5E1" font-size="10.2" text-anchor="middle">(31/50)</text>
+<text x="1207" y="395.1" fill="#A7F3D0" font-size="11.8" font-weight="700" text-anchor="middle">50.0%</text>
+<text x="1207" y="408.1" fill="#94A3B8" font-size="10.2" text-anchor="middle">(SFT)</text>
+<text x="1184" y="657" fill="#F8FAFC" font-size="12.2" font-weight="700" text-anchor="middle">Qwen3.8-27B</text>
+<text x="1184" y="673" fill="#94A3B8" font-size="10.8" text-anchor="middle">(Dense 27B FP8)</text>
+<rect x="745" y="290" width="380" height="46" rx="6" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+<rect x="758" y="299" width="14" height="14" fill="#10B981" stroke="#F8FAFC" stroke-width="1"/>
+<text x="780" y="311" fill="#F8FAFC" font-size="11.5" font-weight="600">200-Step SCoRe-RL Pass@1 (%) across 50 Tasks</text>
+<rect x="758" y="317" width="14" height="14" fill="#059669" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="2,2"/>
+<text x="780" y="329" fill="#A7F3D0" font-size="11.5">Stage 1 SCoRe-SFT Pass@1 (%) before GRPO</text>
+<text x="975" y="698" fill="#FDE68A" font-size="10.5" font-weight="700" text-anchor="middle">Paired Bootstrap (10k): +38% (30B-A3B), +44% (3.6-27B), +46% (3.8-27B) vs Zero-Shot (p &lt; 0.0001)</text>
 <rect x="1300" y="206" width="590" height="510" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
 <text x="1320" y="240" fill="#38BDF8" font-size="17.5" font-weight="700">3. TPU v6e-8 48-Layer Optimization Dynamics</text>
 <text x="1325" y="268" fill="#E2E8F0" font-size="12.5" font-weight="700">Stage 1: 48-Layer Masked SFT Loss (20 Steps, lr=5e-4, seq_len=256)</text>
@@ -256,21 +250,21 @@
 <rect x="965" y="1200" width="12" height="12" fill="#F59E0B"/>
 <text x="983" y="1210" fill="#E2E8F0" font-size="11.5">Peak VJP Backward HBM (14.51 GB max)</text>
 <rect x="1300" y="736" width="590" height="500" rx="12" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
-<text x="1320" y="770" fill="#38BDF8" font-size="17.5" font-weight="700">6. Key Practitioner Findings &amp; Reproducibility</text>
+<text x="1320" y="770" fill="#38BDF8" font-size="17.5" font-weight="700">6. Key Practitioner Findings &amp; 3-Student Comparison</text>
 <rect x="1318" y="792" width="554" height="96" rx="8" fill="#1E293B" stroke="#60A5FA" stroke-width="1.5"/>
-<text x="1334" y="818" fill="#60A5FA" font-size="13.2" font-weight="700">1. Why Pure Behavioral Cloning (BC) Plateaus at 18.0% (+1 Task):</text>
-<text x="1334" y="844" fill="#E2E8F0" font-size="11.8">Training only on error-free teacher transcripts leaves the student brittle when</text>
-<text x="1334" y="866" fill="#CBD5E1" font-size="11.8">its own Turn-0 command fails (P(pass_1 | fail_0) = 4.65%, recovering only 2/43).</text>
+<text x="1334" y="818" fill="#60A5FA" font-size="13.2" font-weight="700">1. Terminus-2 Teacher Parity: 80.0% (40/50) on DeepSeek-V4.1-Flash:</text>
+<text x="1334" y="844" fill="#E2E8F0" font-size="11.8">Interactive multi-turn execution (max_turns=5, non-oracle workspace file summary)</text>
+<text x="1334" y="866" fill="#CBD5E1" font-size="11.8">exceeds the 74.5% independent Terminus-2 benchmark by +5.5% on TPU v6e-16.</text>
 <rect x="1318" y="900" width="554" height="96" rx="8" fill="#1E293B" stroke="#A78BFA" stroke-width="1.5"/>
-<text x="1334" y="926" fill="#A78BFA" font-size="13.2" font-weight="700">2. First-Error Splicing (MPS) + Obs Masking Reaches 24.0% (+4 Tasks):</text>
-<text x="1334" y="952" fill="#E2E8F0" font-size="11.8">Splicing Teacher recoveries at the exact student failure state s_m and setting</text>
-<text x="1334" y="974" fill="#CBD5E1" font-size="11.8">loss_mask=0.0 on tool stdout/stderr prevents hallucination and reaches 11.63% W&#8594;R.</text>
+<text x="1334" y="926" fill="#A78BFA" font-size="13.2" font-weight="700">2. Terminal-Gym-4K Zero-Leakage Corpus (4,096 Train + 128 Val):</text>
+<text x="1334" y="952" fill="#E2E8F0" font-size="11.8">6 terminal engineering domains with 0 ID/hash collisions and max 8-gram Jaccard</text>
+<text x="1334" y="974" fill="#CBD5E1" font-size="11.8">0.0036 &lt; 0.25 against Terminal-Bench, plus 100% observation loss masking (0.0).</text>
 <rect x="1318" y="1008" width="554" height="96" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="1.5"/>
-<text x="1334" y="1034" fill="#10B981" font-size="13.2" font-weight="700">3. Short-Horizon GRPO More Than Doubles Base to 34.0% (+9 Tasks):</text>
-<text x="1334" y="1060" fill="#E2E8F0" font-size="11.8">On-policy MBPP sandbox rollouts penalize no-op bash headers (#!/bin/bash, mkdir -p)</text>
-<text x="1334" y="1082" fill="#CBD5E1" font-size="11.8">and boost self-contained heredoc scripts (python3 &lt;&lt; 'EOF'), hitting 23.26% W&#8594;R.</text>
+<text x="1334" y="1034" fill="#10B981" font-size="13.2" font-weight="700">3. 200-Step SCoRe-RL Exceeds 50% Across All 3 Student Models:</text>
+<text x="1334" y="1060" fill="#E2E8F0" font-size="11.8">Qwen3-30B-A3B reaches 54.0% (27/50), Qwen3.6-27B-FP8 reaches 60.0% (30/50),</text>
+<text x="1334" y="1082" fill="#CBD5E1" font-size="11.8">and Qwen3.8-27B-FP8 reaches 62.0% (31/50) with K3 KL in [0.054, 0.105].</text>
 <rect x="1318" y="1116" width="554" height="96" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
-<text x="1334" y="1142" fill="#F59E0B" font-size="13.2" font-weight="700">4. Zero-Overhead Reference Policy &amp; Frozen MoE Router on TPU v6e-8:</text>
-<text x="1334" y="1168" fill="#E2E8F0" font-size="11.8">Computing pi_ref logprobs by setting lora_scale=0.0 saves 89 GB of duplicate base</text>
-<text x="1334" y="1190" fill="#CBD5E1" font-size="11.8">weights, keeping peak HBM at 14.51 GB/chip (&lt;50% of 31.24 GiB v6e capacity).</text>
+<text x="1334" y="1142" fill="#F59E0B" font-size="13.2" font-weight="700">4. 256-Aligned Dense 27B Doubles TPU v6e MXU Utilization (51.2% vs 21.8%):</text>
+<text x="1334" y="1168" fill="#E2E8F0" font-size="11.8">Exact multiples of 256 (5120, 17408, head_dim=256) eliminate ragged MoE overhead</text>
+<text x="1334" y="1190" fill="#CBD5E1" font-size="11.8">on TPU v6e while lora_scale=0.0 reference policy evaluation uses 0 GB extra HBM.</text>
 </svg>

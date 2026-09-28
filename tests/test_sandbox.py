@@ -1,4 +1,4 @@
-"""Unit tests for `tpu_distil.sandbox` (Wave 0 Clause 0.4)."""
+"""Unit tests for `tpu_distil.sandbox`."""
 
 from __future__ import annotations
 
