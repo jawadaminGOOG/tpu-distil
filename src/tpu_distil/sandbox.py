@@ -159,7 +159,8 @@ class ContainerSandbox:
 
         def _rewrite_paths(text: str) -> str:
             t = (
-                text.replace("-C / ", "-C /app ")
+                text.replace(str(app_dir), "/app")
+                .replace("-C / ", "-C /app ")
                 .replace("/app/protected", "/protected")
                 .replace("/app/opt/", "/opt/")
                 .replace("/app/etc/", "/etc/")
@@ -206,7 +207,6 @@ class ContainerSandbox:
                         "npm ",
                         "sudo",
                         "nohup",
-                        "wget ",
                     )
                 ):
                     continue
@@ -214,7 +214,7 @@ class ContainerSandbox:
                     ["/bin/bash", "-c", _rewrite_paths(cmd)],
                     cwd=app_dir,
                     env=env,
-                    timeout_s=15.0,
+                    timeout_s=20.0,
                 )
 
         for line in df_txt.splitlines():
@@ -340,7 +340,8 @@ class ContainerSandbox:
         if not action_cmd or not action_cmd.strip():
             return SandboxResult(stdout="", stderr="Empty action command", exit_code=2)
         t_cmd = (
-            action_cmd.replace("-C / ", "-C /app ")
+            action_cmd.replace(str(self.app_dir), "/app")
+            .replace("-C / ", "-C /app ")
             .replace("/app/protected", "/protected")
             .replace("/app/opt/", "/opt/")
             .replace("/app/etc/", "/etc/")

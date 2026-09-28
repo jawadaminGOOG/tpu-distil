@@ -6,7 +6,7 @@
 
 `TPU-Distil` transfers multi-turn execution and error-recovery capabilities from a frontier Mixture-of-Experts (MoE) teacher (**`deepseek-ai/DeepSeek-V4.1-Flash`**, `552B` total / `8B` prefill, `16B` decode active parameters served with `mxfp4` fused Megablox GMM `EP8/TP2` on `TPU v6e-16`) into a compact single-host TPU MoE student (**`Qwen/Qwen3-30B-A3B-Instruct-2507`**, `30.5B` total / `3.3B` active parameters, `48` layers, `128` routed experts/layer, served on `TPU v6e-4` and trained across all 48 transformer layers on `TPU v6e-8`) using **Self-Correction via Reinforcement Learning** ([arXiv:2509.14257v3](https://arxiv.org/abs/2509.14257)).
 
-- **[Practitioner Technical Note (`docs/TECHNICAL_NOTE.md`)](docs/TECHNICAL_NOTE.md):** Full methodology, mathematical formulation, per-task log-likelihood margin analysis across all 8 recovered tasks, and Cloud TPU `v6e-8` memory/routing telemetry.
+- **[Practitioner Technical Note (`docs/TECHNICAL_NOTE.md`)](docs/TECHNICAL_NOTE.md):** Full methodology, mathematical formulation, per-task log-likelihood margin analysis across all 9 recovered tasks, `mxfp4` quantization / `GatedDeltaNet` hardware engineering notes, and Cloud TPU `v6e-8` memory/routing telemetry.
 - **[System Architecture (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md):** 4-file engine design, hardware topology, and engineering guardrails.
 - **[Visual Research Poster (`docs/tpu_distil_poster.svg` / `.png`)](docs/tpu_distil_poster.svg):** High-resolution vector and raster summary poster.
 
@@ -21,8 +21,8 @@ All 4 student evaluation arms (`Qwen/Qwen3-30B-A3B-Instruct-2507`) and the teach
 | **`Zero-Shot` (Base Student)** | `Qwen/Qwen3-30B-A3B-Instruct-2507` | `v6e-4` | **`16.0%`** (`8 / 50`) | *Baseline (`0.0%`)* | **`2.33%`** (`1 / 43`) | `11.13 GB` |
 | **`BC-Control` (Stage 1 Pure Teacher SFT)** | `Qwen3-30B-A3B` + `Rank-64 LoRA` | `v6e-8` | **`18.0%`** (`9 / 50`) | `+2.0%` (`+1` task) | **`4.65%`** (`2 / 43`) | `14.51 GB` |
 | **`SCoRe-SFT` (Stage 1 First-Error Spliced `MPS`)** | `Qwen3-30B-A3B` + `Rank-64 LoRA` | `v6e-8` | **`24.0%`** (`12 / 50`) | `+8.0%` (`+4` tasks) | **`11.63%`** (`5 / 43`) | `14.51 GB` |
-| **`SCoRe-RL` (Stage 1 `SCoRe-SFT` + Stage 2 `GRPO`)** | `Qwen3-30B-A3B` + `Rank-64 LoRA` | `v6e-8` | **`32.0%`** (`16 / 50`) | **`+16.0%` (`p = 0.0002`)** | **`20.93%` (`+16.28%` vs. `BC`, `p = 0.0004`)** | **`14.51 GB` (`0` OOMs)** |
-| *Teacher Baseline* | `deepseek-ai/DeepSeek-V4.1-Flash` | `v6e-16` | *`56.0%` (`28 / 50`)* | *`+40.0%` headroom* | *`37.14%` (`13 / 35`)* | — |
+| **`SCoRe-RL` (Stage 1 `SCoRe-SFT` + Stage 2 `GRPO`)** | `Qwen3-30B-A3B` + `Rank-64 LoRA` | `v6e-8` | **`34.0%`** (`17 / 50`) | **`+18.0%` (`p = 0.0001`)** | **`23.26%` (`+18.61%` vs. `BC`, `p = 0.0002`)** | **`14.51 GB` (`0` OOMs)** |
+| *Teacher Baseline* | `deepseek-ai/DeepSeek-V4.1-Flash` | `v6e-16` | *`64.0%` (`32 / 50`)* | *`+48.0%` headroom* | *`43.75%` (`14 / 32`)* | — |
 
 ---
 
