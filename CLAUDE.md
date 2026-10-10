@@ -1,0 +1,33 @@
+# CLAUDE.md — TPU-Distil
+
+Read `README.md` first: it states the project thesis and the current result. `AGENTS.md` holds the codebase invariants.
+
+## Goal (the only thing this repo has to prove)
+Distilling a strong teacher into a small student that already runs well on TPU v6e (1) raises the student's quality significantly in a domain where it was weak and (2) serves at a small fraction of the teacher's cost. Teacher, benchmark and student are interchangeable. Every claim needs a same-run paired comparison with a 95% CI, a self-distillation control, a measured noise floor, measured serving cost, and a script that regenerates the number from raw logs. Prefer the smallest experiment that can show this; add method complexity only after plain distillation is measured.
+
+## Commands
+- Tests (≈2 min, CPU): `cd <repo> && /tmp/venv_jax011/bin/python -m pytest tests -q` → green = all pass. Tests that need the Qwen3 tokenizer in the local Hugging Face cache, or the reference checkout for `tests/test_trainer_equivalence.py` (`$TPU_DISTIL_REFERENCE_REPO`), skip without them. The `distil/` tests need only pytest.
+- Serve a small model on one v6e chip (TPU VM): `distil/serve_small.sh <chip> <model_dir> <name>` → port 8100+chip.
+- Generate / grade / compare (harness VM, stdlib only): `distil/{generate,grade,compare}.py`; BIRD data at `~/kd/bird` on the harness VM.
+- Build training data: `distil/build_sft.py` (SFT records), `distil/build_grpo_rollouts.py` (GRPO records); audit with `distil/leak_audit.py`.
+- Train SFT (TPU VM, all 8 chips, replicas stopped): `MODEL=Qwen3-1.7B EVAL_TASKS=<dev ids json> trainer/train_tpu_vm.sh sft <run> <sft.jsonl> --global_batch 256 --lr 1e-4 --warmup_frac 0.05 --epochs 3 --len_buckets 2048,4096,8192` (≈20 min for 10k BIRD examples on Qwen3-1.7B). Defaults: FSDP 8, TP 1, MICRO_BATCH 8, MAX_SEQ_LEN 8192, RANK 256 (alpha 512).
+- One GRPO iteration: `MODEL=Qwen3-1.7B REF=<KL reference HF dir> EVAL_TASKS=<dev ids json> trainer/train_tpu_vm.sh grpo <run> <policy HF dir> <rollouts.jsonl> <k> --overlong drop --grpo_len_buckets 2048,4096,8192 --mini_batch 64 --beta 0.02 --lr 2e-6 --allow_unaligned_rollouts`, with `trainer/kl_guard.sh $KD_DATA_DIR/train/<run>/metrics/grpo_iter_metrics.jsonl kd-train` running beside it (stops the run if a step's KL exceeds 0.2). Rollouts must be sampled at temperature 1.0 and top-p 1.0 from the policy being trained: the trainer recomputes log-probabilities at temperature 1 without importance correction.
+- Report: `distil/report.py` (see its docstring) regenerates accuracy, paired CIs and cost per correct answer.
+
+## Hardware
+TPU VM `jawadamin-pd-v6e8` (v6e-8, us-east5-a). Scripts read the data disk from `KD_DATA_DIR` (default `/mnt/data`; it holds `models/`, `train/`, `gcs/`, the compilation caches and the repository checkout at `code/`) and the docker daemon from `DOCKER_HOST`; the VM runs an isolated daemon for training and serving, so export `DOCKER_HOST` with its socket path. Harness VM `vm-jawadamin-us-east5-0926`. Teacher: Vertex endpoint (8×H200, us-south1) behind the proxy on the harness VM at `:18201`; it scales to zero (≈25 min cold start).
+
+## Vocabulary
+- **EX**: BIRD execution accuracy — predicted and gold SQL return the same set of rows.
+- **KD arm / SELF arm**: student trained on verified teacher samples / on the same number of its own verified samples.
+- **Noise floor**: base vs base on a second replica, same run.
+- **train-holdout**: 4 BIRD train databases never trained on, for sanity checks that do not touch dev.
+- **Record**: one training example, `{"id", "messages", "response", ...}` (`trainer/data.py`); only the response and its `<|im_end|>` carry loss.
+
+## Traps
+- `prompt_logprobs` on a vLLM-TPU replica at 0.85 HBM OOMs and kills the engine; use a dedicated replica with `GPU_MEM=0.6`.
+- Greedy decoding is not bit-identical across vLLM-TPU replicas (≈1 pt on 1,534 questions); always compare arms from the same run.
+- Micro batch 16 at 8k tokens OOMs on Qwen3-1.7B; use 8.
+- TPU host maintenance reboots the VM about daily; restart replicas afterwards (generation clients retry and resume).
+- BIRD dev is the test set: never train, tune or select on it.
+- The GRPO launcher refuses `REF` equal to `BASE` (the KL reference is normally the SFT-merged policy); set `ALLOW_BASE_REF=1` only on purpose.

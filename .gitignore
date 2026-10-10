@@ -1,0 +1,25 @@
+# Working records (untracked by design)
+.agents/
+
+# Python & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Data, logs, checkpoints, and secrets
+.env
+*.jsonl
+*.npz
+*.ckpt
+*.safetensors
+checkpoints/
+outputs/
+logs/
+data/

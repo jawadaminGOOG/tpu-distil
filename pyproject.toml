@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=65.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tpu-distil"
+version = "0.1.0"
+description = "Teacher-to-student distillation (BIRD text-to-SQL) with a Tunix LoRA SFT and GRPO trainer for dense Qwen3 on Cloud TPU v6e"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools]
+# Scripts, not an importable package: distil/ and trainer/ run in place.
+packages = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
