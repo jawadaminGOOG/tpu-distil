@@ -78,6 +78,8 @@ Both servers ran with untuned defaults and a cap of 128 concurrent sequences; th
 | `distil/correct.py`, `build_grpo_rollouts.py`, `passk.py` | Teacher corrections of failed student answers, GRPO records from graded samples, pass@k |
 | `distil/serve_small.sh`, `bench_serving.py`, `report.py` | Single-chip vLLM-TPU serving, throughput benchmark, report generator |
 | `distil/compute_report.py`, `docs/COMPUTE.md` | Training FLOPs, accelerator time, data and cost from raw logs, and the note it produced |
+| `docs/RECIPE.md` | How the run was executed: machines, libraries and versions, serving, SFT and GRPO settings, evaluation design |
+| `docs/ARCHITECTURE.md` | Components, data flow, record formats and the rules the code enforces |
 | `distil/teacher_client.py`, `vertex_openai_proxy.py` | Retrying chat client, OpenAI-compatible proxy in front of the Vertex teacher endpoint |
 | `trainer/` | Tunix LoRA trainer for dense Qwen3 (`train_tpu_vm.sh`: SFT, GRPO, merge), logit-parity check, merged export |
 | `tests/` | Unit and integration tests for all of the above |
