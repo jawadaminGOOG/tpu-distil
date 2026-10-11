@@ -6,7 +6,8 @@ sample index) is shown to the teacher together with the original prompt and the 
 of the student's query on the training database (the error text, or the row count and up to
 `SHOW_ROWS` rows). The teacher is told the result is wrong and asked to rewrite the answer with
 minimal changes in the same format. The gold SQL and the gold rows are never part of the prompt.
-Questions whose gold query fails to execute are skipped.
+Questions whose gold query fails to execute are skipped. This stage is BIRD-only: the feedback is
+the execution result of the student's SQL, which no other task has.
 
 Output rows keep the question id (`train-<n>`), so the teacher's generations can be graded with
 grade.py and turned into training rows with build_sft.py against the original prompts file: the

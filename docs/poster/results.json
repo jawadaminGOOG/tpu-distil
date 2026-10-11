@@ -1,0 +1,309 @@
+{
+ "title": "TPU-Distil: strong teacher, small TPU student",
+ "subtitle": "Distil DeepSeek-V4.1-Flash into Qwen3-1.7B, reinforce it with GRPO, and serve it on one Cloud TPU v6e chip",
+ "setup": "Text-to-SQL (BIRD dev, 1,534 questions)  ·  financial QA (FinQA test, 1,147 questions)  ·  same-run paired evaluation",
+ "kpis": [
+  [
+   "+18 / +23",
+   "points from distillation",
+   "BIRD / FinQA, final runs"
+  ],
+  [
+   "+4.0 / +5.8",
+   "more points from GRPO",
+   "BIRD / FinQA, 95% CIs above 0"
+  ],
+  [
+   "16–17×",
+   "cheaper per correct answer",
+   "1 v6e chip vs 8× H200"
+  ],
+  [
+   "$136 / $79",
+   "to produce the student",
+   "BIRD / FinQA, list prices"
+  ]
+ ],
+ "trust": [
+  [
+   "±2",
+   "pt serving noise floor"
+  ],
+  [
+   "0",
+   "eval leaks after audit"
+  ],
+  [
+   "95%",
+   "CIs on every comparison"
+  ],
+  [
+   "2",
+   "task families, one recipe"
+  ],
+  [
+   "1:1",
+   "bit-identical retrain"
+  ]
+ ],
+ "pipeline": [
+  {
+   "name": "Teacher answers",
+   "big": "33,728",
+   "lines": [
+    "DeepSeek-V4.1-Flash on 8× H200",
+    "4 samples per BIRD question",
+    "non-thinking mode · 38 min"
+   ],
+   "arrow": "check"
+  },
+  {
+   "name": "Verified data",
+   "big": "10,112",
+   "lines": [
+    "only answers the task verifies",
+    "≤ 4 distinct per question",
+    "0 evaluation leaks (audited)"
+   ],
+   "arrow": "SFT"
+  },
+  {
+   "name": "Distil (KD)",
+   "big": "27 min",
+   "lines": [
+    "Qwen3-1.7B on TPU v6e-8",
+    "117 steps · batch 256 · LoRA r256",
+    "Tunix · qwix · Optax · JAX"
+   ],
+   "arrow": "reward"
+  },
+  {
+   "name": "Reinforce (GRPO)",
+   "big": "6 rounds",
+   "lines": [
+    "8 samples per question at T = 1",
+    "PPO clip 0.2 · KL to KD, beta 0.02",
+    "~45 min per round on v6e-8"
+   ],
+   "arrow": "merge"
+  },
+  {
+   "name": "Serve",
+   "big": "15.8 req/s",
+   "lines": [
+    "vLLM-TPU on one v6e chip",
+    "$0.091 per 1,000 correct answers",
+    "15.8× cheaper than the teacher"
+   ]
+  }
+ ],
+ "tasks": [
+  {
+   "label": "BIRD text-to-SQL",
+   "teacher": 60.7,
+   "ladder": {
+    "base": 30.6,
+    "kd": 48.2,
+    "rl": 52.2
+   },
+   "decomp": {
+    "self": 5.0,
+    "teacher": 13.1,
+    "total": 18.1
+   },
+   "short": "BIRD"
+  },
+  {
+   "label": "FinQA financial QA",
+   "teacher": 75.7,
+   "ladder": {
+    "base": 44.0,
+    "kd": 66.6,
+    "rl": 72.5
+   },
+   "decomp": {
+    "self": 14.6,
+    "teacher": 9.6,
+    "total": 24.1
+   },
+   "short": "FinQA"
+  }
+ ],
+ "cost_ratio": 15.8,
+ "funnel": {
+  "BIRD": [
+   33728,
+   20133,
+   10504,
+   10112
+  ],
+  "FinQA": [
+   24436,
+   18487,
+   6133,
+   6016
+  ]
+ },
+ "compute": {
+  "stages": [
+   [
+    "KD fine-tuning",
+    3.6
+   ],
+   [
+    "GRPO updates",
+    25.8
+   ],
+   [
+    "GRPO rollouts",
+    12.5
+   ]
+  ],
+  "tiles": [
+   [
+    "4.2e18",
+    "training FLOPs"
+   ],
+   [
+    "41.9",
+    "v6e chip-hours"
+   ],
+   [
+    "5.1",
+    "teacher H200-hours"
+   ],
+   [
+    "$136",
+    "at list prices"
+   ]
+  ]
+ },
+ "recipe_card": [
+  [
+   "Student",
+   "Qwen3-1.7B, non-thinking"
+  ],
+  [
+   "Teacher",
+   "DeepSeek-V4.1-Flash"
+  ],
+  [
+   "Adapter",
+   "LoRA r256 · alpha 512 · 7 projections"
+  ],
+  [
+   "SFT",
+   "lr 1e-4 · batch 256 · 3 epochs"
+  ],
+  [
+   "Sequence",
+   "≤ 8,192 tokens · 2k/4k/8k buckets"
+  ],
+  [
+   "GRPO",
+   "G = 8 · clip 0.2 · beta 0.02"
+  ],
+  [
+   "GRPO lr",
+   "2e-6, then 5e-6 · ≤ 256 steps/round"
+  ],
+  [
+   "Mesh",
+   "FSDP 8 × TP 1 on v6e-8"
+  ],
+  [
+   "Serving",
+   "vLLM-TPU · TP 1 · bf16 KV"
+  ],
+  [
+   "Stack",
+   "Tunix · qwix · Flax · Optax · JAX"
+  ]
+ ],
+ "cost": [
+  {
+   "k": "teacher",
+   "label": "Teacher",
+   "hw": "DeepSeek-V4.1-Flash, 8× H200",
+   "acc": 60.7,
+   "cost": 1.438
+  },
+  {
+   "k": "base",
+   "label": "Base student",
+   "hw": "Qwen3-1.7B, 1 v6e chip",
+   "acc": 30.6,
+   "cost": 0.178
+  },
+  {
+   "k": "kd",
+   "label": "Distilled (KD)",
+   "hw": "1 v6e chip",
+   "acc": 48.2,
+   "cost": 0.096
+  },
+  {
+   "k": "rl",
+   "label": "KD + GRPO",
+   "hw": "1 v6e chip",
+   "acc": 52.2,
+   "cost": 0.091
+  }
+ ],
+ "paired": [
+  [
+   "BIRD",
+   "distilled vs base",
+   18.1,
+   [
+    15.6,
+    20.6
+   ]
+  ],
+  [
+   "BIRD",
+   "distilled vs self-distilled",
+   13.1,
+   [
+    10.7,
+    15.5
+   ]
+  ],
+  [
+   "BIRD",
+   "KD + GRPO vs distilled",
+   4.0,
+   [
+    2.2,
+    5.9
+   ]
+  ],
+  [
+   "FinQA",
+   "distilled vs base",
+   24.1,
+   [
+    21.0,
+    27.2
+   ]
+  ],
+  [
+   "FinQA",
+   "distilled vs self-distilled",
+   9.6,
+   [
+    6.9,
+    12.4
+   ]
+  ],
+  [
+   "FinQA",
+   "KD + GRPO vs distilled",
+   5.8,
+   [
+    3.9,
+    7.8
+   ]
+  ]
+ ]
+}

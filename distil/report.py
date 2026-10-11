@@ -65,6 +65,8 @@ def main() -> None:
   ap.add_argument("--teacher-sku", required=True)
   ap.add_argument("--teacher-sku-alt", default=None)
   ap.add_argument("--resamples", type=int, default=10_000)
+  ap.add_argument("--eval-name", default="BIRD dev", help="evaluation set name for the report headings")
+  ap.add_argument("--holdout-name", default="train-holdout databases", help="holdout set name for the report headings")
   ap.add_argument("--student-arm", default="kd", help="arm whose accuracy prices the student (with the 'student' bench)")
   ap.add_argument("--pair", action="append", default=[],
                   help="extra paired comparison B:A (arm names), reported on dev and, when both arms exist, holdout")
@@ -129,12 +131,13 @@ def main() -> None:
   def row(k: str, c: dict) -> str:
     return f"| {k} | {c['b']:.1f} vs {c['a']:.1f} | {c['delta']:+.1f} [{c['ci95'][0]:+.1f}, {c['ci95'][1]:+.1f}] | {c['b_better']} / {c['a_better']} |"
 
-  md = ["## Accuracy (BIRD dev, 1,534 questions, execution accuracy, greedy)", "",
-        "| Arm | EX % |", "|---|---|"] + [f"| {n} | {a:.1f} |" for n, a in acc.items()]
-  md += ["", "## Paired comparisons (dev)", "", "| B − A | B vs A | Δ [95% CI] | B better / A better |",
+  n_eval = len(next(iter(dev.values())))
+  md = [f"## Accuracy ({args.eval_name}, {n_eval:,} questions, greedy)", "",
+        "| Arm | Accuracy % |", "|---|---|"] + [f"| {n} | {a:.1f} |" for n, a in acc.items()]
+  md += ["", f"## Paired comparisons ({args.eval_name})", "", "| B − A | B vs A | Δ [95% CI] | B better / A better |",
          "|---|---|---|---|"] + [row(k, c) for k, c in cmp_dev.items()]
   if cmp_hold:
-    md += ["", "## Paired comparisons (train-holdout databases)", "", "| B − A | B vs A | Δ [95% CI] | B better / A better |",
+    md += ["", f"## Paired comparisons ({args.holdout_name})", "", "| B − A | B vs A | Δ [95% CI] | B better / A better |",
            "|---|---|---|---|"] + [row(k, c) for k, c in cmp_hold.items()]
   md += ["", "## Serving cost", "", "| | Hardware | $/h (SKU) | Best req/s (concurrency) | $ / 1k questions | $ / 1k correct |",
          "|---|---|---|---|---|---|"]

@@ -2,13 +2,15 @@
 """Turn graded generations into the SFT trainer's record JSONL (single-turn, correct samples only).
 
 Usage:
-  build_sft.py --prompts train_prompts.jsonl --gen gen.jsonl --graded graded.jsonl --out sft.jsonl \\
-      [--max-per-question 4] [--n-target 10000 --seed 0] [--exclude-dbs a,b]
+  build_sft.py [--task bird] --prompts train_prompts.jsonl --gen gen.jsonl --graded graded.jsonl --out sft.jsonl \\
+      --forbid-groups <evaluation groups> [--max-per-question 4] [--n-target 10000 --seed 0] [--exclude-groups a,b]
 
-Inputs: prompts.py rows {id, db_id, messages}, generate.py rows {id, choices: [{content, ...}]}, and
-grade.py rows {id, sample, pred_sql, correct, error} (sample = index into that id's choices).
-Only rows with correct == true are ever written. Per question, at most --max-per-question samples
-are kept, each with a distinct SQL after whitespace/case normalisation (lowest sample index first).
+Inputs: prompts.py rows {id, <group>, messages}, generate.py rows {id, choices: [{content, ...}]}, and
+grade.py rows {id, sample, <answer>, correct, error} (sample = index into that id's choices). The task
+(`--task`, default bird) names the group key (BIRD: db_id, the database; FinQA: report, the report page)
+and the answer key (BIRD: pred_sql; FinQA: pred_answer). Only rows with correct == true are ever
+written. Per question, at most --max-per-question samples are kept, each with a distinct answer after
+the task's normalisation (BIRD: SQL whitespace/case; FinQA: numeric value) (lowest sample index first).
 --n-target draws exactly N of the remaining rows with random.Random(--seed); fewer available rows
 is an error. Before training, an empty reasoning block at the start of a response ("</think>" or
 "<think></think>", as a non-thinking endpoint may return it) and leading whitespace are removed: the
@@ -17,13 +19,16 @@ correct response are dropped and counted: responses cut off by the length limit 
 "length") and responses that still hold thinking markup (<think>, </think>), since the student
 trains and serves in non-thinking mode.
 
-Only training questions are accepted: every prompt id must start with "train-", and a prompt on a
-database named in --forbid-dbs (the evaluation databases) is an error, not a silent drop.
+Only training questions are accepted: every prompt id must start with "train-", a prompt row from
+another split is an error, and a prompt on a group named in --forbid-groups (the evaluation databases
+or report pages) is an error, not a silent drop. --forbid-groups takes a comma-separated list, or
+"@FILE": a prompts.py manifest of the evaluation split (its "dbs" / "reports" list) or a file with one
+group per line. --forbid-dbs and --exclude-dbs are the same options under their BIRD names.
 
 Each output row (trainer/data.py Record): id "<id>#s<sample>", messages = the full prompt chat
-(system + user), response = the response after the normalisation above, db_id, sample, and
+(system + user), response = the response after the normalisation above, the group key, sample, and
 served_model when the generation recorded it. A manifest (<out>.manifest.json) records the counts,
-the questions covered, per-database counts and the SHA-256 of every input and of the output.
+the questions covered, per-group counts and the SHA-256 of every input and of the output.
 Standard library only.
 """
 from __future__ import annotations
@@ -39,6 +44,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bird  # noqa: E402  pylint: disable=g-import-not-at-top
+from tasks import NAMES, get_task  # noqa: E402  pylint: disable=g-import-not-at-top
 
 THINK_MARKUP = ("<think>", "</think>")
 _EMPTY_THINK = re.compile(r"\A\s*(?:<think>\s*)?</think>")
@@ -68,28 +74,59 @@ def read_jsonl(path: Path):
           raise ValueError(f"{path}:{line_no}: not JSON ({e})") from e
 
 
-def normalize_sql(sql: str) -> str:
-  """Whitespace- and case-insensitive form of a query, used to count distinct SQL per question."""
-  s = " ".join(sql.split()).lower()
-  while s.endswith(";"):
-    s = s[:-1].rstrip()
-  return s
+normalize_sql = bird.normalize_sql
 
 
-def load_prompts(path: Path, forbid_dbs: set[str]) -> dict[str, dict]:
+def parse_groups(spec: str, task=bird) -> set[str]:
+  """Groups from a comma-separated list, or from "@FILE".
+
+  FILE is either a JSON object, the prompts.py manifest of the evaluation split (its "dbs" or "reports"
+  list, by task), or a plain text file with one group per line. Any other JSON (a list, JSONL rows) is
+  an error, and so is a file in which no group has the task's group form (`task.valid_group`).
+  """
+  if not spec.startswith("@"):
+    return {g for g in spec.split(",") if g}
+  path = spec[1:]
+  text = Path(path).read_text()
+  try:
+    doc = json.loads(text)
+  except json.JSONDecodeError:
+    doc = None
+  if doc is not None:
+    key = f"{task.GROUP_SHORT}s"
+    if not isinstance(doc, dict):
+      raise ValueError(f"{path}: JSON {type(doc).__name__}, not a prompts manifest with a {key!r} list")
+    if not isinstance(doc.get(key), list):
+      raise ValueError(f"{path}: JSON file has no {key!r} list")
+    groups = {str(g) for g in doc[key] if g}
+  else:
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if any(ln.startswith(("{", "[")) for ln in lines):
+      raise ValueError(f"{path}: looks like JSONL; give the prompts manifest (<prompts>.manifest.json) instead")
+    groups = set(lines)
+  if not any(task.valid_group(g) for g in groups):
+    raise ValueError(f"{path}: no entry has the form of a {task.LABEL} {task.GROUP_NOUN} name")
+  return groups
+
+
+def load_prompts(path: Path, forbid_dbs: set[str], task=bird) -> dict[str, dict]:
+  """Training prompts by id. `forbid_dbs` holds the evaluation groups of the task."""
+  key = task.GROUP_KEY
   out = {}
   for r in read_jsonl(path):
     if not str(r["id"]).startswith("train-"):
       raise ValueError(f"{path}: prompt {r['id']} is not a training question (id must start with 'train-')")
-    if r.get("db_id") in forbid_dbs:
-      raise ValueError(f"{path}: prompt {r['id']} is on evaluation database {r['db_id']}")
+    if key not in r:
+      raise ValueError(f"{path}: prompt {r['id']} has no {key!r} (is it a {task.LABEL} prompts file?)")
+    if r[key] in forbid_dbs:
+      raise ValueError(f"{path}: prompt {r['id']} is on evaluation {task.GROUP_NOUN} {r[key]}")
     if r["id"] in out:
       raise ValueError(f"{path}: duplicate prompt id {r['id']}")
     msgs = r["messages"]
     if not msgs or msgs[-1].get("role") != "user":
       raise ValueError(f"{path}: prompt {r['id']} does not end with a user message")
-    if r.get("split") == "dev":
-      raise ValueError(f"{path}: prompt {r['id']} is from BIRD dev, which is never trained on")
+    if r.get("split", "train") != "train":
+      raise ValueError(f"{path}: prompt {r['id']} is from {task.LABEL} {r['split']}, which is never trained on")
     out[r["id"]] = r
   return out
 
@@ -107,7 +144,8 @@ def load_generations(path: Path) -> dict[str, dict]:
 
 
 def build(prompts: dict[str, dict], gens: dict[str, dict], graded: list[dict], *, max_per_question: int | None,
-          n_target: int | None, seed: int, exclude_dbs: set[str]) -> tuple[list[dict], dict]:
+          n_target: int | None, seed: int, exclude_dbs: set[str], task=bird) -> tuple[list[dict], dict]:
+  gkey, pkey = task.GROUP_KEY, task.PRED_KEY
   counts = Counter()
   counts["graded_rows"] = len(graded)
   correct = [r for r in graded if r.get("correct") is True]
@@ -123,16 +161,16 @@ def build(prompts: dict[str, dict], gens: dict[str, dict], graded: list[dict], *
       raise ValueError(f"graded id {qid} is not in --prompts")
     if qid not in gens:
       raise ValueError(f"graded id {qid} has no generation in --gen")
-    if prompts[qid]["db_id"] in exclude_dbs:
-      counts["dropped_excluded_db"] += 1
+    if prompts[qid][gkey] in exclude_dbs:
+      counts[f"dropped_excluded_{task.GROUP_SHORT}"] += 1
       continue
     choices = gens[qid]["choices"]
     if not 0 <= k < len(choices):
       raise ValueError(f"graded ({qid}, sample {k}) is outside the {len(choices)} generated choices")
     choice = choices[k]
     content = choice.get("content")
-    if bird.extract_sql(content) != r["pred_sql"]:
-      raise ValueError(f"graded ({qid}, sample {k}): pred_sql is not the SQL of the generated response")
+    if task.extract_answer(content) != r[pkey]:
+      raise ValueError(f"graded ({qid}, sample {k}): {pkey} is not the {task.ANSWER_NOUN} of the generated response")
     if choice.get("finish_reason") == "length":
       counts["dropped_truncated"] += 1
       continue
@@ -146,16 +184,16 @@ def build(prompts: dict[str, dict], gens: dict[str, dict], graded: list[dict], *
 
   candidates = []
   for qid in sorted(by_q):
-    kept_sql: set[str] = set()
+    kept: set[str] = set()
     for k, r, choice in sorted(by_q[qid], key=lambda x: x[0]):
-      norm = normalize_sql(r["pred_sql"])
-      if norm in kept_sql:
-        counts["dropped_duplicate_sql"] += 1
+      norm = task.normalize_answer(r[pkey])
+      if norm in kept:
+        counts[f"dropped_duplicate_{task.ANSWER_SHORT}"] += 1
         continue
-      if max_per_question is not None and len(kept_sql) >= max_per_question:
+      if max_per_question is not None and len(kept) >= max_per_question:
         counts["dropped_over_cap"] += 1
         continue
-      kept_sql.add(norm)
+      kept.add(norm)
       candidates.append((qid, k, choice))
   counts["candidates"] = len(candidates)
 
@@ -171,56 +209,60 @@ def build(prompts: dict[str, dict], gens: dict[str, dict], graded: list[dict], *
         "id": f"{qid}#s{k}",
         "messages": p["messages"],
         "response": choice["content"],
-        "db_id": p["db_id"],
+        gkey: p[gkey],
         "sample": k,
     }
     if gens[qid].get("served_model"):
       row["served_model"] = gens[qid]["served_model"]
     rows.append(row)
   counts["written"] = len(rows)
-  per_db = Counter(r["db_id"] for r in rows)
+  per_group = Counter(r[gkey] for r in rows)
   stats = {
       "counts": dict(sorted(counts.items())),
       "questions_covered": len({r["id"].rsplit("#s", 1)[0] for r in rows}),
-      "per_db": dict(sorted(per_db.items())),
+      f"per_{task.GROUP_SHORT}": dict(sorted(per_group.items())),
   }
   return rows, stats
 
 
 def main(argv: list[str] | None = None) -> int:
   ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+  ap.add_argument("--task", choices=NAMES, default="bird")
   ap.add_argument("--prompts", type=Path, required=True)
   ap.add_argument("--gen", type=Path, required=True)
   ap.add_argument("--graded", type=Path, required=True)
   ap.add_argument("--out", type=Path, required=True)
   ap.add_argument("--max-per-question", type=int, default=None,
-                  help="keep at most K correct samples per question, each with a distinct normalised SQL")
+                  help="keep at most K correct samples per question, each with a distinct normalised answer")
   ap.add_argument("--n-target", type=int, default=None, help="draw exactly N rows (error if fewer are available)")
   ap.add_argument("--seed", type=int, default=0)
-  ap.add_argument("--exclude-dbs", default="", help="comma-separated db_ids to leave out")
-  ap.add_argument("--forbid-dbs", required=True,
-                  help="comma-separated evaluation db_ids; a prompt on one of them is an error")
+  ap.add_argument("--exclude-groups", "--exclude-dbs", dest="exclude_groups", default="",
+                  help="comma-separated groups (BIRD databases, FinQA report pages) to leave out")
+  ap.add_argument("--forbid-groups", "--forbid-dbs", dest="forbid_groups", required=True,
+                  help="evaluation groups, comma-separated or @FILE; a prompt on one of them is an error")
   args = ap.parse_args(argv)
+  task = get_task(args.task)
   if args.max_per_question is not None and args.max_per_question < 1:
     ap.error("--max-per-question must be >= 1")
   if args.n_target is not None and args.n_target < 1:
     ap.error("--n-target must be >= 1")
 
-  exclude = {d for d in args.exclude_dbs.split(",") if d}
-  forbid = {d for d in args.forbid_dbs.split(",") if d}
+  exclude = {d for d in args.exclude_groups.split(",") if d}
+  forbid = parse_groups(args.forbid_groups, task)
   if not forbid:
-    ap.error("--forbid-dbs must name the evaluation databases")
-  rows, stats = build(load_prompts(args.prompts, forbid), load_generations(args.gen), list(read_jsonl(args.graded)),
-                      max_per_question=args.max_per_question, n_target=args.n_target, seed=args.seed,
-                      exclude_dbs=exclude)
+    ap.error(f"--forbid-groups must name the evaluation {task.GROUP_NOUN}s")
+  rows, stats = build(load_prompts(args.prompts, forbid, task), load_generations(args.gen),
+                      list(read_jsonl(args.graded)), max_per_question=args.max_per_question, n_target=args.n_target,
+                      seed=args.seed, exclude_dbs=exclude, task=task)
   args.out.parent.mkdir(parents=True, exist_ok=True)
   with open(args.out, "w") as f:
     for r in rows:
       f.write(json.dumps(r) + "\n")
   manifest = {
       **stats,
+      "task": task.NAME,
       "args": {"max_per_question": args.max_per_question, "n_target": args.n_target, "seed": args.seed,
-               "exclude_dbs": sorted(exclude), "forbid_dbs": sorted(forbid)},
+               f"exclude_{task.GROUP_SHORT}s": sorted(exclude), f"forbid_{task.GROUP_SHORT}s": sorted(forbid)},
       "sha256": {"prompts": sha256_file(args.prompts), "gen": sha256_file(args.gen),
                  "graded": sha256_file(args.graded), "out": sha256_file(args.out)},
       "paths": {"prompts": str(args.prompts), "gen": str(args.gen), "graded": str(args.graded), "out": str(args.out)},

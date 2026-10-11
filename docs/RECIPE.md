@@ -1,6 +1,6 @@
 # How the recipe ran
 
-The machines, libraries, settings and checks of the README's run, stage by stage.
+The machines, libraries, settings and checks of the README's runs, stage by stage. Sections 1–7 describe the BIRD run. Section 8 lists what changed for FinQA.
 
 ## Machines
 
@@ -83,7 +83,7 @@ The trainer merges the adapters into the base weights and streams the Hugging Fa
 
 Group relative policy optimisation (GRPO) starts from the knowledge distillation (KD) checkpoint, with the same trainer. Per iteration:
 
-1. Eight replicas of the current student answer each training question 8 times at temperature 1.0, top-p 1.0. The trainer recomputes log-probabilities at temperature 1 without correction, so other settings would make the data off-policy.
+1. Seven or eight replicas of the current student answer each training question 8 times at temperature 1.0, top-p 1.0 (with seven, the eighth chip serves the KD student for the hold-out screen). The trainer recomputes log-probabilities at temperature 1 without correction, so other settings would make the data off-policy.
 2. Reward is 1 if the SQL returns the gold rows, else 0. `distil/build_grpo_rollouts.py` keeps at most 2,048 questions with mixed rewards for one pass.
 
 | Setting | Value |
@@ -106,6 +106,26 @@ A driver on the CPU VM ran six iterations: serve, screen against KD on the hold-
 - Pass conditions were written before each stage. BIRD dev never chose a checkpoint or a hyperparameter.
 - `distil/report.py` and `distil/compute_report.py` regenerate every result and cost figure from raw files and Cloud Billing Catalog prices.
 
+## 8. Second task: FinQA
+
+The same machines, libraries, trainer and settings ran FinQA. Each pipeline script takes `--task finqa`; the task module `distil/tasks/finqa.py` supplies the prompt, the answer extraction and the grader.
+
+| Stage | FinQA |
+|---|---|
+| Data | FinQA train 6,251, dev 883, test 1,147 questions. Test is the evaluation set. Dev is the holdout for screens. |
+| Leak filter | `distil/prompts.py` removed 142 training questions that match a test or dev question exactly or share a 13-word sequence with one. No training question shares a report page with test or dev. 6,109 training questions remain. |
+| Prompt | System: "You are an expert financial analyst." User: the report text before the table, the table as pipe-separated rows, the text after the table, the question, and an instruction to reason briefly and end with `Answer: <number>`. Yes/no is allowed only for yes/no questions. Version `finqa-2`; the run records its SHA-256. |
+| Grading | The number after the last `Answer:` line. Correct if it is within 1% of the gold answer, also in the ×100 and ÷100 percentage forms. If the gold answer is below 0.5 in magnitude, an absolute error of 0.005 is also correct, but 0 never matches a gold answer that is not 0. Yes/no answers must match exactly. Controls on test: gold 100%, shuffled 0.6%. |
+| Teacher data | 4 samples per question at temperature 0.7, top-p 0.95: 24,436 answers in 26 minutes, 18,487 correct. At most 4 distinct answers per question, then exactly 6,016 rows (4,775 questions). |
+| Control | 8 student samples per question: 6,016 rows from 3,558 questions. |
+| Leak audit | Both sets: 0 rows from non-training questions, 0 evaluation report pages, 0 exact or 13-gram overlaps, 0 answers that fail re-grading. |
+| SFT | Same settings as BIRD. 6,016 rows give 69 optimiser steps over 3 epochs (23 full batches per epoch; the trainer drops the last 128 rows of each epoch). |
+| GRPO | Same settings as BIRD: 6 iterations, lr 2e-6 then 5e-6. Rollouts cover all 6,109 questions × 8 samples. From iteration 4, fewer than 2,048 questions had mixed outcomes, so the iterations used all of them: 255, 255, 254, 236, 210 and 193 steps. The highest step KL rose from 0.0061 to 0.0492. The guard never stopped a run. |
+| Evaluation | One run with base (two replicas), KD, GRPO iteration 2 and GRPO iteration 6, on test and dev. Iteration 6 was fixed as the final arm before the run. |
+| Serving benchmark | FinQA test prompts, same ladder and limits as BIRD. Student: best rate 24.1 requests/s at 256 concurrent requests. Teacher: 17.9 requests/s at 128. |
+
+The first FinQA prompt (`finqa-1`) offered `Answer: yes` / `Answer: no` on every question. The base student then answered yes or no on 363 numeric test questions. We changed the prompt before any teacher output or training. We chose the new prompt on dev: the not-a-number failures of the base student fell from 262 to 65.
+
 ## Problems and fixes
 
 | Problem | Fix |
@@ -114,6 +134,7 @@ A driver on the CPU VM ran six iterations: serve, screen against KD on the hold-
 | A prompt log-probability request (about 4.6 GB extra memory) stopped a serving replica | Parity uses a separate replica with less memory for weights and cache |
 | One chip's runtime stopped with `SLICE_FAILURE_WORKER_UNAVAILABLE` | A watchdog restarts replicas; the client retries |
 | Host maintenance rebooted the TPU VM | Clients waited and resumed |
+| Two replicas of the same weights gave different greedy text on 45% of FinQA test questions (different final answers on 23%) | Every comparison uses arms from one run; two base replicas measure the noise floor in each run |
 | The teacher takes about 25 minutes to start from zero | Keep-warm loop during teacher stages |
 
 ## Reproduce

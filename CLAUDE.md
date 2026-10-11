@@ -8,7 +8,7 @@ Distilling a strong teacher into a small student that already runs well on TPU v
 ## Commands
 - Tests (≈2 min, CPU): `cd <repo> && /tmp/venv_jax011/bin/python -m pytest tests -q` → green = all pass. Tests that need the Qwen3 tokenizer in the local Hugging Face cache, or the reference checkout for `tests/test_trainer_equivalence.py` (`$TPU_DISTIL_REFERENCE_REPO`), skip without them. The `distil/` tests need only pytest.
 - Serve a small model on one v6e chip (TPU VM): `distil/serve_small.sh <chip> <model_dir> <name>` → port 8100+chip.
-- Generate / grade / compare (harness VM, stdlib only): `distil/{generate,grade,compare}.py`; BIRD data at `~/kd/bird` on the harness VM.
+- Generate / grade / compare (harness VM, stdlib only): `distil/{generate,grade,compare}.py`. Task-specific scripts take `--task bird|finqa` (default `bird`); BIRD data at `~/kd/bird`, FinQA data at `~/kd/finqa` on the harness VM.
 - Build training data: `distil/build_sft.py` (SFT records), `distil/build_grpo_rollouts.py` (GRPO records); audit with `distil/leak_audit.py`.
 - Train SFT (TPU VM, all 8 chips, replicas stopped): `MODEL=Qwen3-1.7B EVAL_TASKS=<dev ids json> trainer/train_tpu_vm.sh sft <run> <sft.jsonl> --global_batch 256 --lr 1e-4 --warmup_frac 0.05 --epochs 3 --len_buckets 2048,4096,8192` (≈20 min for 10k BIRD examples on Qwen3-1.7B). Defaults: FSDP 8, TP 1, MICRO_BATCH 8, MAX_SEQ_LEN 8192, RANK 256 (alpha 512).
 - One GRPO iteration: `MODEL=Qwen3-1.7B REF=<KL reference HF dir> EVAL_TASKS=<dev ids json> trainer/train_tpu_vm.sh grpo <run> <policy HF dir> <rollouts.jsonl> <k> --overlong drop --grpo_len_buckets 2048,4096,8192 --mini_batch 64 --beta 0.02 --lr 2e-6 --allow_unaligned_rollouts`, with `trainer/kl_guard.sh $KD_DATA_DIR/train/<run>/metrics/grpo_iter_metrics.jsonl kd-train` running beside it (stops the run if a step's KL exceeds 0.2). Rollouts must be sampled at temperature 1.0 and top-p 1.0 from the policy being trained: the trainer recomputes log-probabilities at temperature 1 without importance correction.
@@ -19,15 +19,17 @@ TPU VM `jawadamin-pd-v6e8` (v6e-8, us-east5-a). Scripts read the data disk from 
 
 ## Vocabulary
 - **EX**: BIRD execution accuracy — predicted and gold SQL return the same set of rows.
+- **FinQA accuracy**: the number after the last `Answer:` matches the gold answer within 1% relative (×100 and ÷100 percentage forms accepted; absolute 0.005 when |gold| < 0.5; yes/no exact; `distil/tasks/finqa.py`). More lenient than the official FinQA metric.
+- **Group**: what the leak filters key on — the BIRD database or the FinQA report page.
 - **KD arm / SELF arm**: student trained on verified teacher samples / on the same number of its own verified samples.
 - **Noise floor**: base vs base on a second replica, same run.
-- **train-holdout**: 4 BIRD train databases never trained on, for sanity checks that do not touch dev.
+- **train-holdout**: 4 BIRD train databases never trained on, for sanity checks that do not touch dev. FinQA's holdout is its dev split.
 - **Record**: one training example, `{"id", "messages", "response", ...}` (`trainer/data.py`); only the response and its `<|im_end|>` carry loss.
 
 ## Traps
 - `prompt_logprobs` on a vLLM-TPU replica at 0.85 HBM OOMs and kills the engine; use a dedicated replica with `GPU_MEM=0.6`.
-- Greedy decoding is not bit-identical across vLLM-TPU replicas (≈1 pt on 1,534 questions); always compare arms from the same run.
+- Greedy decoding is not bit-identical across vLLM-TPU replicas (BIRD ≈1 pt; FinQA up to 1.9 pts, identical text on about 55% of questions); always compare arms from the same run.
 - Micro batch 16 at 8k tokens OOMs on Qwen3-1.7B; use 8.
 - TPU host maintenance reboots the VM about daily; restart replicas afterwards (generation clients retry and resume).
-- BIRD dev is the test set: never train, tune or select on it.
+- BIRD dev and FinQA test are the test sets: never train, tune or select on them.
 - The GRPO launcher refuses `REF` equal to `BASE` (the KL reference is normally the SFT-merged policy); set `ALLOW_BASE_REF=1` only on purpose.

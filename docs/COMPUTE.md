@@ -1,6 +1,6 @@
-# Compute, data and cost of the distillation run
+# Compute, data and cost of the distillation runs
 
-This note answers four questions about the run in the README: how many training FLOPs distillation and RL took, how much accelerator time, how much data, and what it cost. Every number below is produced by `distil/compute_report.py` from the run's raw logs (trainer statistics and timing files, generation logs with per-request token usage, serving benchmarks, the teacher keep-warm log and the Cloud Billing Catalog SKU pages).
+This note answers four questions about each run in the README (BIRD first, then [FinQA](#finqa)): how many training FLOPs distillation and RL took, how much accelerator time, how much data, and what it cost. Every number below is produced by `distil/compute_report.py` from the run's raw logs (trainer statistics and timing files, generation logs with per-request token usage, serving benchmarks, the teacher keep-warm log and the Cloud Billing Catalog SKU pages).
 
 ## Answers
 
@@ -36,6 +36,43 @@ Per-run detail (generated):
 | rl_it5_rollouts | recipe | 30,320,822 | 1.06e+17 | 2578 | 7 v6e chip | 5.01 | — |
 | rl_it6_rollouts | recipe | 30,168,212 | 1.05e+17 | 753 | 7 v6e chip | 1.46 | — |
 
+
+## FinQA
+
+The same recipe on FinQA, from the FinQA run's raw logs with the same script and prices.
+
+| Question | Recipe (teacher data → KD SFT → 6 GRPO iterations) |
+|---|---|
+| **Training FLOPs** | **2.0 × 10¹⁸ model FLOPs** (2.6 × 10¹⁸ executed, including rematerialisation). KD SFT 0.20 × 10¹⁸ (10%); the six GRPO iterations 1.78 × 10¹⁸ (90%). Student rollouts add 0.29 × 10¹⁸ inference FLOPs. |
+| **Accelerator time** | **23.1 TPU v6e chip-hours**: KD SFT 1.7, GRPO updates 16.3 (about 2.7 per iteration), GRPO rollouts 5.1 (1.3 of which were lost to a replica fault that stalled the last round). **3.5 teacher H200-hours** of active generation (26 minutes on 8 GPUs). |
+| **Data** | 6,109 FinQA training questions. Teacher: 24,436 answers (6.2M prompt and 2.4M completion tokens), of which 18,487 were correct and 6,016 distinct ones were kept for SFT (22.7M tokens processed over 3 epochs, 2.0M of them trained; the trainer drops 128 trailing examples per epoch, so these counts are about 2.1% high). RL: 6 rounds × 48,872 student rollouts (41.8M prompt and 41.1M completion tokens in total), giving 89,620 training sequences (115.8M tokens processed, 13.7M trained). The gold answers are used only to verify answers, never as a training target. |
+| **Cost** | **$79** at active-compute prices: TPU $62.38 (23.1 chip-hours × $2.70) + teacher $16.15 (3.5 GPU-hours × $4.58); $85 with the teacher at the reservation rate. |
+
+FinQA needs about half the BIRD budget: its prompts and answers are shorter, it has fewer training questions, and from the fourth GRPO iteration fewer questions had mixed outcomes, so the iterations shrank. Proving the result took 1.3 TPU chip-hours ($4) and 1.0 active teacher H200-hours ($5) for the self-distillation arm, the teacher's test evaluation and the serving benchmarks; the student's self-samples, the evaluations and the hold-out screens ran on student replicas and are not counted here. The teacher endpoint was up for at least 4.9 hours during the FinQA work (39.5 GPU-hours, $181), mostly idle while the student trained.
+
+Per-run detail (generated):
+
+| Run | Role | Tokens processed | Model FLOPs | Wall (s) | Accelerators | Accelerator-hours | MFU |
+|---|---|---|---|---|---|---|---|
+| fq-kd | recipe | 22,656,249 | 2e+17 | 764 | 8 v6e chip | 1.70 | 3.6% |
+| fq-self | overhead | 23,209,458 | 2.05e+17 | 516 | 8 v6e chip | 1.15 | 5.4% |
+| fq-rl-it1 | recipe | 20,842,445 | 2.59e+17 | 1142 | 8 v6e chip | 2.54 | 3.1% |
+| fq-rl-it2 | recipe | 20,788,114 | 3.33e+17 | 1438 | 8 v6e chip | 3.20 | 3.2% |
+| fq-rl-it3 | recipe | 21,073,556 | 3.38e+17 | 1320 | 8 v6e chip | 2.93 | 3.5% |
+| fq-rl-it4 | recipe | 19,422,165 | 3.11e+17 | 1251 | 8 v6e chip | 2.78 | 3.4% |
+| fq-rl-it5 | recipe | 17,429,794 | 2.79e+17 | 1133 | 8 v6e chip | 2.52 | 3.4% |
+| fq-rl-it6 | recipe | 16,220,137 | 2.6e+17 | 1035 | 8 v6e chip | 2.30 | 3.4% |
+| teacher_train_samples | recipe | 8,612,539 | — | 1588 | 8 H200 | 3.53 | — |
+| rl_it1_rollouts | recipe | 13,361,497 | 4.64e+16 | 311 | 7 v6e chip | 0.60 | — |
+| rl_it2_rollouts | recipe | 13,673,018 | 4.75e+16 | 329 | 7 v6e chip | 0.64 | — |
+| rl_it3_rollouts | recipe | 13,985,581 | 4.86e+16 | 349 | 7 v6e chip | 0.68 | — |
+| rl_it4_rollouts | recipe | 13,941,219 | 4.84e+16 | 340 | 7 v6e chip | 0.66 | — |
+| rl_it5_rollouts | recipe | 13,839,731 | 4.81e+16 | 331 | 7 v6e chip | 0.64 | — |
+| rl_it6_rollouts | recipe | 14,091,480 | 4.9e+16 | 986 | 7 v6e chip | 1.92 | — |
+| teacher_test_eval | overhead | 1,279,023 | — | 163 | 8 H200 | 0.36 | — |
+| bench_teacher_finqa | overhead | 3,342,413 | — | 287 | 8 H200 | 0.64 | — |
+| bench_rl_final_finqa | overhead | 6,545,753 | — | 307 | 1 v6e chip | 0.09 | — |
+| bench_base_finqa | overhead | 6,671,899 | — | 344 | 1 v6e chip | 0.10 | — |
 
 ## What is counted
 
