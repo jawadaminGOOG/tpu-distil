@@ -413,22 +413,30 @@ def apply_lora(model: Any, mesh: Any, targets: str, rank: int, alpha: float, see
                    for k, v in model_input.items()}
   # qwix finds the target modules by tracing one forward pass; Tunix block remat wraps each
   # block in jax.checkpoint, which hides those calls from qwix. Trace without remat, then
-  # restore the configured remat for training.
+  # restore the configured remat for training. The tracing input is a few tokens long, which the
+  # splash kernel refuses (its block must divide the length), so flash attention is off as well.
   cfgs = {id(c): c for _, v in nnx.iter_graph(model) if (c := getattr(v, "config", None)) is not None
           and hasattr(c, "remat_config")}
   saved = {k: c.remat_config for k, c in cfgs.items()}
+  saved_flash = {k: getattr(c, "use_flash_attention", None) for k, c in cfgs.items()}
   for c in cfgs.values():
     c.remat_config = type(c.remat_config).NONE  # each family's own RematConfig enum
+    if hasattr(c, "use_flash_attention"):
+      c.use_flash_attention = False
   try:
     lora_model = qwix.apply_lora_to_model(model, provider, rngs=nnx.Rngs(seed), **model_input)
     nnx.pop(lora_model, nnx.Intermediate)  # values sown during the tracing forward pass
   finally:
     for k, c in cfgs.items():
       c.remat_config = saved[k]
+      if saved_flash[k] is not None:
+        c.use_flash_attention = saved_flash[k]
   for _, v in nnx.iter_graph(lora_model):
     c = getattr(v, "config", None)
     if c is not None and hasattr(c, "remat_config") and id(c) not in saved:
       c.remat_config = next(iter(saved.values()))
+      if hasattr(c, "use_flash_attention"):
+        c.use_flash_attention = next(iter(saved_flash.values()))
   # Place every param (base + fresh LoRA a/b) on its annotated NamedSharding. device_put
   # rather than with_sharding_constraint: qwix creates LoRA params eagerly on one device,
   # and an eager sharding constraint rejects SingleDeviceSharding inputs under jax>=0.11.
