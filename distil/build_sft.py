@@ -17,7 +17,8 @@ is an error. Before training, an empty reasoning block at the start of a respons
 Qwen3 chat templates cannot reproduce leading whitespace after the serving prompt. Two kinds of
 correct response are dropped and counted: responses cut off by the length limit (finish_reason
 "length") and responses that still hold thinking markup (<think>, </think>), since the student
-trains and serves in non-thinking mode.
+trains and serves in non-thinking mode (Gemma 4 thinking channels, <|channel> ... <channel|>, count as
+thinking markup too).
 
 Only training questions are accepted: every prompt id must start with "train-", a prompt row from
 another split is an error, and a prompt on a group named in --forbid-groups (the evaluation databases
@@ -46,7 +47,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bird  # noqa: E402  pylint: disable=g-import-not-at-top
 from tasks import NAMES, get_task  # noqa: E402  pylint: disable=g-import-not-at-top
 
-THINK_MARKUP = ("<think>", "</think>")
+# Qwen3 / DeepSeek thinking tags and the Gemma 4 thinking channel.
+THINK_MARKUP = ("<think>", "</think>", "<|channel>", "<channel|>")
 _EMPTY_THINK = re.compile(r"\A\s*(?:<think>\s*)?</think>")
 
 

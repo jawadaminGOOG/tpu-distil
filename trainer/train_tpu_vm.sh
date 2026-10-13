@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the dense Qwen3 student trainer (trainer/train.py) on a single-host TPU VM (all 8 chips of a
+# Run the student trainer (trainer/train.py; Qwen3 or Gemma 4, from the checkpoint's config.json) on a single-host TPU VM (all 8 chips of a
 # v6e-8) in the isolated docker daemon.
 # Usage (on the TPU VM):
 #   train_tpu_vm.sh probe <run_id> [extra probe_memory args...]

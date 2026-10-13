@@ -16,6 +16,11 @@ Per prompt position t >= 1 (the distribution of token t given tokens < t):
   dlogp_topk  : max over the K vLLM ids of |logp_vllm - logp_jax|
 Gate: exit 1 if mean top1 < 0.99 or mean kl >= 1e-3. All numbers are written as computed.
 
+--positions generated scores vLLM's own greedy continuation instead of the prompt: max_tokens=GEN,
+logprobs=K, token ids returned. The JAX side runs on prompt + continuation and is compared at the
+continuation positions. Use it for models whose server refuses prompt_logprobs (vLLM refuses them for
+multimodal architectures such as Gemma 4); it checks the decode path rather than prefill.
+
 Multi-host: every process builds the model and runs the forward; process 0 alone calls
 vLLM and writes the JSON. vLLM results are broadcast so all hosts use identical ids.
 """
@@ -38,6 +43,7 @@ import data as dc  # noqa: E402  pylint: disable=g-import-not-at-top
 import student_models as sm  # noqa: E402  pylint: disable=g-import-not-at-top
 
 K = 20  # vLLM --max-logprobs default
+GEN = 64  # continuation length scored with --positions generated
 TOP1_MIN = 0.99
 KL_MAX = 1e-3
 
@@ -107,6 +113,40 @@ def query_vllm(endpoint: str, served_model: str, ids: list[int], timeout: float)
   return r.json()
 
 
+def query_vllm_generated(endpoint: str, served_model: str, ids: list[int], timeout: float) -> dict:
+  import requests  # pylint: disable=g-import-not-at-top
+
+  body = {"model": served_model, "prompt": ids, "max_tokens": GEN, "temperature": 0.0, "logprobs": K,
+          "return_tokens_as_token_ids": True}
+  r = requests.post(f"{endpoint.rstrip('/')}/v1/completions", json=body, timeout=timeout)
+  r.raise_for_status()
+  return r.json()
+
+
+def _token_id(key: str) -> int:
+  if not key.startswith("token_id:"):
+    raise RuntimeError(f"logprobs key {key!r} is not a token id; the server ignored return_tokens_as_token_ids")
+  return int(key.split(":", 1)[1])
+
+
+def parse_generated_logprobs(resp: dict, n_prompt: int) -> tuple[list[int], np.ndarray, np.ndarray, np.ndarray]:
+  """-> continuation ids and, over prompt + continuation, topk_ids [L, K] (-1 = not scored), topk_lp, tok_lp."""
+  lp = resp["choices"][0]["logprobs"]
+  gen = [_token_id(t) for t in lp["tokens"]]
+  L = n_prompt + len(gen)
+  top_ids = np.full((L, K), -1, np.int32)
+  top_lp = np.full((L, K), np.nan, np.float32)
+  tok_lp = np.full((L,), np.nan, np.float32)
+  for g, (tid, lpv, top) in enumerate(zip(gen, lp["token_logprobs"], lp["top_logprobs"])):
+    t = n_prompt + g
+    ranked = sorted(((_token_id(k), v) for k, v in top.items()), key=lambda kv: -kv[1])[:K]
+    for j, (k, v) in enumerate(ranked):
+      top_ids[t, j] = k
+      top_lp[t, j] = v
+    tok_lp[t] = lpv
+  return gen, top_ids, top_lp, tok_lp
+
+
 def parse_prompt_logprobs(resp: dict, ids: list[int]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
   """-> topk_ids [L, K] (int32, -1 = absent), topk_lp [L, K] f32, tok_lp [L] f32 (nan at t=0)."""
   plp = resp["choices"][0].get("prompt_logprobs")
@@ -141,6 +181,8 @@ def main() -> int:
   ap.add_argument("--tp", type=int, default=4)
   ap.add_argument("--timeout", type=float, default=600.0)
   ap.add_argument("--flash", action="store_true", help="use the splash kernel used in training")
+  ap.add_argument("--positions", choices=["prompt", "generated"], default="prompt",
+                  help="score prompt positions (prompt_logprobs) or vLLM's greedy continuation (see the docstring)")
   ap.add_argument("--out", required=True)
   ap.add_argument("--dump_npz", default="", help="also save raw per-position arrays (vLLM top-K, JAX log-probs)")
   args = ap.parse_args()
@@ -158,10 +200,23 @@ def main() -> int:
 
   # ---- vLLM (process 0), then broadcast ------------------------------------------------
   vl = []
-  for ids in all_ids:
+  for n, ids in enumerate(all_ids):
+    if args.positions == "generated":
+      # Every host needs the continuation ids; process 0 queries, the ids travel in a fixed-size buffer.
+      buf = np.full((GEN + 1,), -1, np.int64)
+      if jax.process_index() == 0:
+        resp = query_vllm_generated(args.endpoint, args.served_model, ids, args.timeout)
+        gen = [_token_id(t) for t in resp["choices"][0]["logprobs"]["tokens"]]
+        buf[0] = len(gen)
+        buf[1 : 1 + len(gen)] = gen
+      buf = np.asarray(multihost_utils.broadcast_one_to_all(buf))
+      all_ids[n] = ids = ids + [int(x) for x in buf[1 : 1 + int(buf[0])]]
     L = len(ids)
     if jax.process_index() == 0:
-      top_ids, top_lp, tok_lp = parse_prompt_logprobs(query_vllm(args.endpoint, args.served_model, ids, args.timeout), ids)
+      if args.positions == "generated":
+        _, top_ids, top_lp, tok_lp = parse_generated_logprobs(resp, L - int(buf[0]))
+      else:
+        top_ids, top_lp, tok_lp = parse_prompt_logprobs(query_vllm(args.endpoint, args.served_model, ids, args.timeout), ids)
     else:
       top_ids = np.zeros((L, K), np.int32)
       top_lp = np.zeros((L, K), np.float32)
@@ -222,6 +277,8 @@ def main() -> int:
     jlp, jam = per_prompt[i]
     agree, kls, dps, dks = [], [], [], []
     for t in range(1, L):
+      if top_ids[t, 0] < 0:  # position not scored by vLLM (prompt positions with --positions generated)
+        continue
       valid = top_ids[t] >= 0
       v_lp = top_lp[t][valid].astype(np.float64)
       j_lp = jlp[t - 1, :K][valid].astype(np.float64)
@@ -240,7 +297,7 @@ def main() -> int:
     rows.append({
         "prompt_index": i,
         "n_tokens": L,
-        "n_scored_positions": L - 1,
+        "n_scored_positions": len(agree),
         "top1_agreement": float(np.mean(agree)),
         "mean_kl": float(np.mean(kls)),
         "max_kl": float(np.max(kls)),
@@ -268,6 +325,7 @@ def main() -> int:
       "endpoint": args.endpoint,
       "served_model": args.served_model,
       "k": K,
+      "positions": args.positions,
       "gate": {"top1_min": TOP1_MIN, "kl_max_exclusive": KL_MAX},
       "passed": passed,
       "summary": summary,

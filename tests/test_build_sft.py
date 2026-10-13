@@ -189,3 +189,7 @@ def test_normalize_response():
   assert f(" \n\tA") == "A"
   assert f("<think>real reasoning</think>A") == "<think>real reasoning</think>A"  # kept, then dropped as markup
   assert f("A </think> B") == "A </think> B"
+
+
+def test_gemma_thinking_channel_counts_as_thinking_markup():
+  assert all(t in build_sft.THINK_MARKUP for t in ("<|channel>", "<channel|>"))
