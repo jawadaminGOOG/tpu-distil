@@ -122,7 +122,8 @@ def record_to_messages(rec: Record) -> list[Msg]:
   return msgs
 
 
-_IM_END = "<|im_end|>"
+# End-of-turn markers that follow the assistant message: Qwen3 "<|im_end|>", Gemma 4 "<turn|>".
+END_OF_TURN = ("<|im_end|>", "<turn|>")
 _THINK_START = "<think>"
 _THINK_END = "</think>"
 # Largest fraction of examples a builder may drop because the chat template rewrote a message
@@ -175,11 +176,12 @@ def _char_spans(text: str, msgs: Sequence[Msg]) -> tuple[np.ndarray, np.ndarray]
     seg[start:end] = SEG[m.seg]
     if m.weight:
       w[start:end] = m.weight
-      if m.role == "assistant" and text.startswith(_IM_END, end):
+      eot = next((t for t in END_OF_TURN if text.startswith(t, end)), None) if m.role == "assistant" else None
+      if eot:
         # Train the end-of-turn token so the student learns to stop.
-        seg[end : end + len(_IM_END)] = SEG["assistant"]
-        w[end : end + len(_IM_END)] = m.weight
-        end += len(_IM_END)
+        seg[end : end + len(eot)] = SEG["assistant"]
+        w[end : end + len(eot)] = m.weight
+        end += len(eot)
     cursor = end
   return seg, w
 

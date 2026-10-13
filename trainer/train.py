@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Dense Qwen3 student (model_type "qwen3", e.g. Qwen3-1.7B, Qwen3-4B-Instruct-2507) on Tunix:
-LoRA SFT, one-iteration GRPO, merge-export and an HBM probe.
+"""Student on Tunix — dense Qwen3 (model_type "qwen3", e.g. Qwen3-1.7B) or the Gemma 4 text decoder
+(model_type "gemma4", e.g. Gemma 4 E2B-it), chosen from --hf_dir's config.json: LoRA SFT, one-iteration
+GRPO, merge-export and an HBM probe.
 
   sft   --data D                         LoRA SFT on single-turn records (data.Record); loss on the
                                          response and its end-of-turn token only
@@ -10,8 +11,9 @@ LoRA SFT, one-iteration GRPO, merge-export and an HBM probe.
                                          on --hf_dir pi_k) -> merged-T sharded HF safetensors for vLLM
   probe_memory                           AOT-compile the SFT step per (remat, micro batch, length); HBM use
 
-LoRA: rank 256, alpha 512 (launcher defaults) on attention q/k/v/o and MLP gate/up/down. Each GRPO
-iteration trains a fresh LoRA on top of merged pi_k.
+LoRA: rank 256, alpha 512 (launcher defaults) on attention q/k/v/o and MLP gate/up/down (Gemma 4: the
+fused k/v projection, only in layers that compute their own K/V). Each GRPO iteration trains a fresh
+LoRA on top of merged pi_k.
 
 --hf_dir / --data / --rollouts / --ref_hf_dir accept gs:// (downloaded per host);
 --gcs_out uploads --out_dir from process 0 at the end.
@@ -36,8 +38,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import student_models as sm  # noqa: E402  pylint: disable=g-import-not-at-top
 import trainer_core as tc  # noqa: E402  pylint: disable=g-import-not-at-top
 
-LORA_TARGETS = sm.LORA_TARGETS
-
+LORA_TARGETS = sm.LORA_TARGETS  # Qwen3; a Gemma 4 run takes sm.lora_targets(hf_dir)
 
 def forward_hidden(model, input_tokens, positions, pad_mask):
   """Hidden states (no LM head) so the loss applies the head chunk by chunk.
@@ -53,10 +54,11 @@ def forward_hidden(model, input_tokens, positions, pad_mask):
 
 
 def deltas_factory(args):
-  return lambda lora_model: (lambda: sm.lora_deltas_hf(lora_model, args.alpha, args.rank))
+  family = sm.model_family(args.hf_dir)
+  return lambda lora_model: (lambda: sm.lora_deltas_hf(lora_model, args.alpha, args.rank, family))
 
 
-def probe_memory(args, base_model, mesh) -> None:
+def probe_memory(args, base_model, mesh, lora_targets: str = sm.LORA_TARGETS) -> None:
   """AOT-compile the LoRA SFT train step for each (remat, micro_batch, seq_len); print HBM use.
 
   The step is the one PeftTrainer runs: value_and_grad of the chunked-head CE loss with
@@ -66,9 +68,7 @@ def probe_memory(args, base_model, mesh) -> None:
   import jax.numpy as jnp  # pylint: disable=g-import-not-at-top
   from flax import nnx  # pylint: disable=g-import-not-at-top
   from jax.sharding import NamedSharding, PartitionSpec as P  # pylint: disable=g-import-not-at-top
-  from tunix.models.qwen3 import model as qwen3_lib  # pylint: disable=g-import-not-at-top
-
-  lora = sm.apply_lora(base_model, mesh, LORA_TARGETS, args.rank, args.alpha)
+  lora = sm.apply_lora(base_model, mesh, lora_targets, args.rank, args.alpha)
   loss_fn, _ = tc.make_ce_loss(forward_hidden, args.loss_chunk)
 
   def step(model, tokens, weight, pad_mask, positions):
@@ -82,7 +82,7 @@ def probe_memory(args, base_model, mesh) -> None:
   rows = []
   for remat in args.remats.split(","):
     for c in cfgs.values():
-      c.remat_config = getattr(qwen3_lib.RematConfig, remat)
+      c.remat_config = getattr(type(c.remat_config), remat)
     for mb in (int(x) for x in args.micro_batches.split(",")):
       for L in (int(x) for x in args.seq_lens.split(",")):
         sh = NamedSharding(mesh, P("fsdp", None))
@@ -141,22 +141,26 @@ def main() -> int:
   tc.resolve_inputs(args)
   tok = AutoTokenizer.from_pretrained(args.hf_dir)
   mesh = sm.make_mesh(args.fsdp, args.tp)
-  print(f"[qwen3] devices={jax.device_count()} processes={jax.process_count()} mesh={dict(mesh.shape)}", flush=True)
+  family = sm.model_family(args.hf_dir)
+  lora_targets = sm.lora_targets(args.hf_dir)
+  print(f"[{family}] devices={jax.device_count()} processes={jax.process_count()} mesh={dict(mesh.shape)}", flush=True)
 
   def load(hf_dir):
     # Flash (splash) attention with segment ids for training; the causal kernel masks padding.
-    return sm.load_qwen3(hf_dir, mesh, remat=args.remat, flash=args.flash == "on")
+    if sm.model_family(hf_dir) != family:
+      raise ValueError(f"{hf_dir} is not a {family} checkpoint")
+    return sm.load_student(hf_dir, mesh, remat=args.remat, flash=args.flash == "on")
 
   if args.cmd == "sft":
-    tc.run_sft(args, load_base=lambda: load(args.hf_dir), mesh=mesh, tokenizer=tok, lora_targets=LORA_TARGETS,
+    tc.run_sft(args, load_base=lambda: load(args.hf_dir), mesh=mesh, tokenizer=tok, lora_targets=lora_targets,
                forward=forward_hidden, deltas_fn_factory=deltas_factory(args))
   elif args.cmd == "grpo_iter":
-    tc.run_grpo_iter(args, load_policy=load, mesh=mesh, tokenizer=tok, lora_targets=LORA_TARGETS,
+    tc.run_grpo_iter(args, load_policy=load, mesh=mesh, tokenizer=tok, lora_targets=lora_targets,
                      forward=forward_hidden, deltas_fn_factory=deltas_factory(args))
   elif args.cmd == "probe_memory":
-    probe_memory(args, load(args.hf_dir), mesh)
+    probe_memory(args, load(args.hf_dir), mesh, lora_targets)
   else:
-    lora = sm.apply_lora(load(args.hf_dir), mesh, LORA_TARGETS, args.rank, args.alpha)
+    lora = sm.apply_lora(load(args.hf_dir), mesh, lora_targets, args.rank, args.alpha)
     tc.restore_lora(lora, args.ckpt)
     # EXPORT_STREAM=1 with --gcs_out uploads each shard as it is written (no full local copy).
     tc.export_merged(args.hf_dir, args.out_dir, deltas_factory(args)(lora), args.tag,

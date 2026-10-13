@@ -5,7 +5,8 @@ A task is a module that provides:
   SPLITS, EVAL_SPLIT          the splits it can load and the one that is never trained, tuned or selected on
   FULL_COVERAGE_SPLITS        splits where grade.py counts a question without a generation as incorrect
   GROUP_KEY, GROUP_SHORT,     the key under which prompt, graded and training rows name the question's
-  GROUP_NOUN                  group (BIRD: the database; FinQA: the source report page), a short form used
+  GROUP_NOUN                  group (BIRD: the database; FinQA: the source report page;
+                              MATH: a fingerprint of the problem text), a short form used
                               in manifest keys, and the noun used in messages
   PRED_KEY, ANSWER_SHORT,     the key under which graded rows hold the extracted answer, and the short form
   ANSWER_NOUN                 and noun used in counters and messages
@@ -24,10 +25,12 @@ from __future__ import annotations
 import importlib
 from types import ModuleType
 
-NAMES = ("bird", "finqa")
+NAMES = ("bird", "finqa", "math")
+# Task name -> module name. MATH lives in hendrycks_math.py so that no module shadows the stdlib `math`.
+_MODULES = {"bird": "bird", "finqa": "finqa", "math": "hendrycks_math"}
 
 
 def get_task(name: str) -> ModuleType:
   if name not in NAMES:
     raise ValueError(f"unknown task {name!r}; known tasks: {', '.join(NAMES)}")
-  return importlib.import_module(f".{name}", __name__)
+  return importlib.import_module(f".{_MODULES[name]}", __name__)

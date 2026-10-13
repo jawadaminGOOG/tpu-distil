@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """JAX-trainer vs vLLM next-token parity on 16 fixed prompts.
 
-JAX side : the trainer's Tunix dense Qwen3, bf16 weights from HF safetensors.
+JAX side : the trainer's Tunix student (Qwen3 or Gemma 4), bf16 weights from HF safetensors.
 vLLM side: POST {endpoint}/v1/completions with the prompt as token ids, max_tokens=1,
            echo=true, prompt_logprobs=K. The vLLM server under test MUST serve the same
            bf16 checkpoint with --kv-cache-dtype auto (FP8 weights or FP8 KV make the
@@ -172,7 +172,7 @@ def main() -> int:
   # ---- JAX model -----------------------------------------------------------------------
   t0 = time.time()
   mesh = sm.make_mesh(args.fsdp, args.tp)
-  model = sm.load_qwen3(args.hf_dir, mesh, remat=False, flash=args.flash)
+  model = sm.load_student(args.hf_dir, mesh, remat=False, flash=args.flash)
   # The splash kernel needs the padded length to be a multiple of its block size.
   bucket_base = max(dc.MXU, model.config.flash_attention_block_size) if args.flash else dc.MXU
   load_s = time.time() - t0

@@ -1,4 +1,4 @@
-"""LoRA SFT, one-iteration GRPO and merge-export drivers for the dense Qwen3 student.
+"""LoRA SFT, one-iteration GRPO and merge-export drivers for the student (Qwen3 or Gemma 4).
 
 The entry point (train.py) supplies:
   load(hf_dir)         -> base model on the mesh

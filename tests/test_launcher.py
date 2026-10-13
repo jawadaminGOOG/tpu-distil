@@ -149,6 +149,7 @@ def _run_merge(tmp_path, monkeypatch, extra_env, extra_args):
   monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", lambda d: fake_tok)
   monkeypatch.setattr(sm, "maybe_init_distributed", lambda: None)
   monkeypatch.setattr(sm, "make_mesh", lambda fsdp, tp: types.SimpleNamespace(shape={"fsdp": fsdp, "tp": tp}))
+  monkeypatch.setattr(sm, "model_family", lambda hf_dir: "qwen3")
   monkeypatch.setattr(sm, "load_qwen3", lambda *a, **k: rec.setdefault("loader", (a[0], k)) and "model")
   monkeypatch.setattr(sm, "apply_lora", lambda model, mesh, tgt, *a, **k: rec.setdefault("targets", tgt) and ("lora", model))
   monkeypatch.setattr(sm, "lora_deltas_hf", lambda *a, **k: rec.setdefault("deltas", a[1:]) and {})
@@ -177,7 +178,7 @@ def test_merge_restores_the_checkpoint_and_streams_the_export(tmp_path, monkeypa
   rec = _run_merge(tmp_path, monkeypatch, {"EXPORT_STREAM": "1"}, ["--gcs_out", "gs://b/run/grpo/iter_3"])
   assert rec["loader"][0] == "/m/pi_2" and rec["targets"] == sm.LORA_TARGETS
   assert rec["restored"] == (("lora", "model"), "gs://b/run/grpo/iter_3/ckpt")
-  assert rec["deltas"] == (512.0, 256)
+  assert rec["deltas"] == (512.0, 256, "qwen3")
   assert rec["export"] == ("/m/pi_2", str(tmp_path / "o"), "iter_3", "gs://b/run/grpo/iter_3/merged-iter_3")
   assert rec["finalized"] == "gs://b/run/grpo/iter_3"
 

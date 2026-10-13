@@ -1,13 +1,16 @@
-"""Build the dense Qwen3 student on a TPU mesh (Tunix), apply LoRA, and export LoRA deltas in HF layout.
+"""Build the student on a TPU mesh (Tunix), apply LoRA, and export LoRA deltas in HF layout.
 
-The loader reads bf16 HF safetensors directly and verifies every architecture field against
-config.json before any weight is touched.
+Two student families: dense Qwen3 (config.json model_type "qwen3") and the Gemma 4 text decoder
+(model_type "gemma4", e.g. Gemma 4 E2B-it; vision and audio towers are not loaded and are copied
+unchanged on export). The loaders read bf16 HF safetensors directly and verify every architecture
+field against config.json before any weight is touched.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 
 import numpy as np
@@ -19,6 +22,19 @@ LORA_TARGETS = r".*/attn/(q_proj|k_proj|v_proj|o_proj)|.*/mlp/(gate_proj|up_proj
 # HF tensors a LoRA export may modify, one per adapted module.
 LORA_HF_KEY = (r"model\.layers\.[0-9]+\.(self_attn\.(q|k|v|o)_proj"
                r"|mlp\.(gate|up|down)_proj)\.weight")
+GEMMA4_LORA_HF_KEY = (r"model\.language_model\.layers\.[0-9]+\.(self_attn\.(q|k|v|o)_proj"
+                      r"|mlp\.(gate|up|down)_proj)\.weight")
+FAMILIES = ("qwen3", "gemma4")
+
+
+def model_family(hf_dir: str) -> str:
+  """"qwen3" or "gemma4", from config.json."""
+  mt = read_hf_config(hf_dir).get("model_type")
+  if mt == "qwen3":
+    return "qwen3"
+  if mt == "gemma4":
+    return "gemma4"
+  raise ValueError(f"{hf_dir}: unsupported model_type {mt!r}; supported: qwen3, gemma4")
 
 
 def maybe_init_distributed() -> None:
@@ -145,16 +161,183 @@ def load_qwen3(hf_dir: str, mesh: Any, remat: Any = True, flash: bool = False, c
   return model
 
 
-def lora_deltas_hf(lora_model: Any, alpha: float, rank: int) -> dict[str, np.ndarray]:
+# ---------------------------------------------------------------------------
+# Gemma 4 (text decoder)
+# ---------------------------------------------------------------------------
+
+
+def _gemma4_text_config(c: dict[str, Any]) -> dict[str, Any]:
+  if c.get("model_type") != "gemma4" or c.get("text_config", {}).get("model_type") != "gemma4_text":
+    raise ValueError(f"expected model_type gemma4 with a gemma4_text text_config, got {c.get('model_type')}")
+  return c["text_config"]
+
+
+def gemma4_unshared_layers(hf_dir: str) -> int:
+  """Layers that compute their own K/V; the last `num_kv_shared_layers` reuse an earlier layer's."""
+  t = _gemma4_text_config(read_hf_config(hf_dir))
+  return t["num_hidden_layers"] - t["num_kv_shared_layers"]
+
+
+def gemma4_lora_targets(hf_dir: str) -> str:
+  """Attention q/o and MLP gate/up/down in every layer; the fused k/v projection only in the layers
+  that compute their own K/V (a KV-shared layer's k/v weights never enter the forward pass).
+
+  Tunix Gemma 4: layers/N/attn/{q_einsum, kv_einsum, attn_vec_einsum} are `Einsum` modules and
+  layers/N/mlp/{gate,up,down}_proj are `nnx.Linear` modules; qwix wraps both.
+  """
+  unshared = "|".join(str(i) for i in range(gemma4_unshared_layers(hf_dir)))
+  return (r".*/attn/(q_einsum|attn_vec_einsum)|.*/mlp/(gate_proj|up_proj|down_proj)"
+          rf"|(.*/)?layers/({unshared})/attn/kv_einsum")
+
+
+def gemma4_config_from_hf(hf_dir: str, remat: Any = True, flash: bool = False, compute_dtype: Any = None) -> Any:
+  """Tunix Gemma 4 ModelConfig (text decoder only) from config.json.
+
+  Every field Tunix cannot express is asserted to be at its Tunix-implied value. When a Tunix preset
+  has the same depth and width, every architecture field is also checked against it.
+  """
+  import jax.numpy as jnp  # pylint: disable=g-import-not-at-top
+  from tunix.models.gemma4 import model as model_lib  # pylint: disable=g-import-not-at-top
+
+  c = read_hf_config(hf_dir)
+  if "quantization_config" in c:
+    raise ValueError(f"{hf_dir} is quantized; use the bf16 checkpoint")
+  t = _gemma4_text_config(c)
+  implied = {
+      "attention_bias": False,
+      "hidden_activation": "gelu_pytorch_tanh",
+      "enable_moe_block": False,
+      "attention_k_eq_v": False,
+      "num_global_key_value_heads": None,
+      "use_bidirectional_attention": None,
+  }
+  bad = {k: (t.get(k), v) for k, v in implied.items() if t.get(k, v) != v}
+  if not c.get("tie_word_embeddings", t.get("tie_word_embeddings", False)):
+    bad["tie_word_embeddings"] = (False, True)
+  if t.get("vocab_size_per_layer_input", t["vocab_size"]) != t["vocab_size"]:
+    bad["vocab_size_per_layer_input"] = (t.get("vocab_size_per_layer_input"), t["vocab_size"])
+  kinds = {"sliding_attention": model_lib.AttentionType.LOCAL_SLIDING,
+           "full_attention": model_lib.AttentionType.GLOBAL}
+  if set(t["layer_types"]) - set(kinds):
+    bad["layer_types"] = (sorted(set(t["layer_types"])), sorted(kinds))
+  rope = t.get("rope_parameters") or {}
+  local, glob = rope.get("sliding_attention", {}), rope.get("full_attention", {})
+  if local.get("rope_type", "default") != "default" or set(local) - {"rope_type", "rope_theta"}:
+    bad["rope_parameters.sliding_attention"] = (local, "default rope")
+  if glob.get("rope_type") != "proportional" or set(glob) - {"rope_type", "rope_theta", "partial_rotary_factor"}:
+    bad["rope_parameters.full_attention"] = (glob, "proportional rope")
+  if bad:
+    raise ValueError(f"config.json fields Tunix Gemma 4 cannot express: {bad}")
+  n = t["num_hidden_layers"]
+  remat_cfg = (getattr(model_lib.RematConfig, remat) if isinstance(remat, str)
+               else model_lib.RematConfig.BLOCK if remat else model_lib.RematConfig.NONE)
+  cfg = model_lib.ModelConfig(
+      num_layers=n,
+      num_embed=t["vocab_size"],
+      embed_dim=t["hidden_size"],
+      hidden_dim=t["intermediate_size"],
+      num_heads=t["num_attention_heads"],
+      head_dim=t["head_dim"],
+      num_kv_heads=t["num_key_value_heads"],
+      final_logit_softcap=t["final_logit_softcapping"],
+      sliding_window_size=t["sliding_window"],
+      per_layer_input_dim=t.get("hidden_size_per_layer_input") or 0,
+      num_global_kv_heads=t.get("num_global_key_value_heads"),
+      global_key_size=t["global_head_dim"],
+      attention_pattern=tuple(kinds[x] for x in t["layer_types"]),
+      frac_shared_layers=t["num_kv_shared_layers"] / n,
+      global_rope_proportion=glob.get("partial_rotary_factor", 1.0),
+      local_rope_proportion=1.0,
+      k_eq_v_global=False,
+      override_kv_shared_ffw_hidden=2 * t["intermediate_size"] if t.get("use_double_wide_mlp") else None,
+      local_base_frequency=int(local["rope_theta"]),
+      global_base_frequency=int(glob["rope_theta"]),
+      remat_config=remat_cfg,
+      dtype=compute_dtype or jnp.bfloat16,
+      param_dtype=compute_dtype or jnp.bfloat16,
+      use_flash_attention=flash,
+      flash_attention_block_size=1024,
+  )
+  fields = ("num_layers", "num_embed", "embed_dim", "hidden_dim", "num_heads", "head_dim", "num_kv_heads",
+            "final_logit_softcap", "sliding_window_size", "per_layer_input_dim", "num_global_kv_heads",
+            "global_key_size", "frac_shared_layers", "global_rope_proportion", "local_rope_proportion",
+            "k_eq_v_global", "override_kv_shared_ffw_hidden", "local_base_frequency", "global_base_frequency")
+  for name in ("gemma4_e2b", "gemma4_e4b"):
+    preset = getattr(model_lib.ModelConfig, name, None)
+    if preset is None:
+      continue
+    p = preset()
+    if (p.num_layers, p.embed_dim) != (cfg.num_layers, cfg.embed_dim):
+      continue
+    diff = {f: (getattr(cfg, f), getattr(p, f)) for f in fields if getattr(cfg, f) != getattr(p, f)}
+    pattern = p.attention_pattern or model_lib.GEMMA4_ATTENTION_PATTERN
+    if any(cfg.attention_pattern[i] != pattern[i % len(pattern)] for i in range(n)):
+      diff["attention_pattern"] = "differs"
+    if diff:
+      raise ValueError(f"config.json disagrees with the Tunix {name} preset: {diff}")
+  return cfg
+
+
+def load_gemma4(hf_dir: str, mesh: Any, remat: Any = True, flash: bool = False, compute_dtype: Any = None) -> Any:
+  """Tunix Gemma 4 text decoder from HF safetensors, placed on `mesh` (vision/audio weights skipped)."""
+  import jax.numpy as jnp  # pylint: disable=g-import-not-at-top
+  from tunix.models.gemma4 import params_safetensors  # pylint: disable=g-import-not-at-top
+
+  cfg = gemma4_config_from_hf(hf_dir, remat=remat, flash=flash, compute_dtype=compute_dtype)
+  print(f"[gemma4] layers={cfg.num_layers} embed={cfg.embed_dim} mlp={cfg.hidden_dim} heads={cfg.num_heads}/"
+        f"{cfg.num_kv_heads} head_dim={cfg.head_dim}/{cfg.global_key_size} window={cfg.sliding_window_size} "
+        f"softcap={cfg.final_logit_softcap}", flush=True)
+  with mesh:
+    model = params_safetensors.create_model_from_safe_tensors(
+        file_dir=hf_dir, config=cfg, mesh=mesh, dtype=compute_dtype or jnp.bfloat16, text_only=True)
+  unshared = sum(1 for i, j in enumerate(model.kv_cache_sharing_patterns) if i == j)
+  if unshared != gemma4_unshared_layers(hf_dir):
+    raise ValueError(f"Tunix shares K/V in {cfg.num_layers - unshared} layers; config.json says "
+                     f"{cfg.num_layers - gemma4_unshared_layers(hf_dir)}")
+  return model
+
+
+def load_student(hf_dir: str, mesh: Any, remat: Any = True, flash: bool = False, compute_dtype: Any = None) -> Any:
+  family = model_family(hf_dir)
+  load = load_qwen3 if family == "qwen3" else load_gemma4
+  return load(hf_dir, mesh, remat=remat, flash=flash, compute_dtype=compute_dtype)
+
+
+def lora_targets(hf_dir: str) -> str:
+  return LORA_TARGETS if model_family(hf_dir) == "qwen3" else gemma4_lora_targets(hf_dir)
+
+
+def _hf_keys_gemma4(layer: str, delta: np.ndarray) -> dict[str, np.ndarray]:
+  """HF tensors ([out, in]) for one Tunix Gemma 4 LoRA delta, keyed by HF name."""
+  m = re.fullmatch(r"layers\.([0-9]+)\.(attn|mlp)\.(\w+)", layer)
+  if m is None:
+    raise ValueError(f"unexpected LoRA module {layer}")
+  i, block, name = m.groups()
+  pre = f"model.language_model.layers.{i}"
+  if block == "mlp":  # nnx.Linear kernel [in, out]
+    return {f"{pre}.mlp.{name}.weight": np.ascontiguousarray(delta.T)}
+  if name == "q_einsum":  # w[N, D, H]; LoRA delta [D, N, H] -> HF [N*H, D]
+    return {f"{pre}.self_attn.q_proj.weight": np.ascontiguousarray(delta.reshape(delta.shape[0], -1).T)}
+  if name == "attn_vec_einsum":  # delta [N, H, D] -> HF [D, N*H]
+    return {f"{pre}.self_attn.o_proj.weight": np.ascontiguousarray(delta.reshape(-1, delta.shape[-1]).T)}
+  if name == "kv_einsum":  # w[2, K, D, H]; LoRA delta [D, 2, K, H] -> HF k, v [K*H, D]
+    d = delta.shape[0]
+    return {f"{pre}.self_attn.k_proj.weight": np.ascontiguousarray(delta[:, 0].reshape(d, -1).T),
+            f"{pre}.self_attn.v_proj.weight": np.ascontiguousarray(delta[:, 1].reshape(d, -1).T)}
+  raise ValueError(f"unexpected LoRA module {layer}")
+
+
+def lora_deltas_hf(lora_model: Any, alpha: float, rank: int, family: str = "qwen3") -> dict[str, np.ndarray]:
   """Tunix LoRA -> HF-keyed float32 deltas ([out, in]), scaled by alpha/rank, for attention and MLP LoRA.
+
+  qwix factors an adapted weight as A [contracting dims, r] @ B [r, other dims], so the delta comes
+  out with the input dimension first.
 
   Same reshape convention as tunix.models.safetensors_saver, but multi-host safe and returned
   for the sharded writer (Tunix's saver only reads a single model.safetensors). An `nnx.Linear`
   kernel [in, out] reshapes like the q/k/v einsum weights; every key is checked against the
   LoRA target set.
   """
-  import re  # pylint: disable=g-import-not-at-top
-
   from flax import nnx  # pylint: disable=g-import-not-at-top
   from jax.experimental import multihost_utils  # pylint: disable=g-import-not-at-top
 
@@ -168,6 +351,9 @@ def lora_deltas_hf(lora_model: Any, alpha: float, rank: int) -> dict[str, np.nda
     a = np.asarray(multihost_utils.process_allgather(ab["a"].get_value(), tiled=True), np.float32)
     b = np.asarray(multihost_utils.process_allgather(ab["b"].get_value(), tiled=True), np.float32)
     delta = np.tensordot(a, b, axes=([a.ndim - 1], [0])) * (alpha / rank)
+    if family == "gemma4":
+      out.update(_hf_keys_gemma4(layer, delta))
+      continue
     # q/k/v: w[D, N, H] -> HF [N*H, D];  o: w[N, H, D] -> HF [D, N*H]
     if layer.endswith("o_proj"):
       d2 = delta.reshape(-1, delta.shape[-1])
@@ -175,7 +361,7 @@ def lora_deltas_hf(lora_model: Any, alpha: float, rank: int) -> dict[str, np.nda
       d2 = delta.reshape(delta.shape[0], -1)
     key = f"model.{layer}.weight".replace(".attn.", ".self_attn.")
     out[key] = np.ascontiguousarray(d2.T)
-  bad = sorted(k for k in out if not re.fullmatch(LORA_HF_KEY, k))
+  bad = sorted(k for k in out if not re.fullmatch(GEMMA4_LORA_HF_KEY if family == "gemma4" else LORA_HF_KEY, k))
   if bad:
     raise ValueError(f"LoRA deltas outside the LoRA targets: {bad[:5]}")
   return out
@@ -231,10 +417,8 @@ def apply_lora(model: Any, mesh: Any, targets: str, rank: int, alpha: float, see
   cfgs = {id(c): c for _, v in nnx.iter_graph(model) if (c := getattr(v, "config", None)) is not None
           and hasattr(c, "remat_config")}
   saved = {k: c.remat_config for k, c in cfgs.items()}
-  if cfgs:
-    from tunix.models.qwen3 import model as qwen3_lib  # pylint: disable=g-import-not-at-top
-    for c in cfgs.values():
-      c.remat_config = qwen3_lib.RematConfig.NONE
+  for c in cfgs.values():
+    c.remat_config = type(c.remat_config).NONE  # each family's own RematConfig enum
   try:
     lora_model = qwix.apply_lora_to_model(model, provider, rngs=nnx.Rngs(seed), **model_input)
     nnx.pop(lora_model, nnx.Intermediate)  # values sown during the tracing forward pass
@@ -289,16 +473,22 @@ def apply_lora(model: Any, mesh: Any, targets: str, rank: int, alpha: float, see
 
 
 def lm_head_f32(model: Any, h: Any) -> Any:
-  """Tunix Qwen3 LM head with float32 output.
+  """Tunix LM head with float32 output (Qwen3, or Gemma 4 with its final logit soft-cap).
 
   Tunix's head is a bf16 einsum whose bf16 output is cast to float32 afterwards, which
   rounds every logit to bf16 (a 0.125 step at |logit| in [16, 32)). Here the same bf16
-  weights and activations are multiplied with a float32 result.
+  weights and activations are multiplied with a float32 result. Gemma 4 ties the head to the
+  input embedding and soft-caps the logits: cap * tanh(logits / cap).
   """
   import jax.numpy as jnp  # pylint: disable=g-import-not-at-top
 
   dt = model.config.dtype
   x = jnp.astype(h, dt)
+  cap = getattr(model.config, "final_logit_softcap", None)
+  if cap is not None:  # Gemma 4: tied head, soft-capped logits
+    w = jnp.astype(model.embedder.input_embedding.value, dt)
+    logits = jnp.einsum("BTD,VD->BTV", x, w, preferred_element_type=jnp.float32)
+    return jnp.tanh(logits / cap) * cap
   if model.config.use_tied_embedding:
     w = jnp.astype(model.embedder.input_embedding.value, dt)
     return jnp.einsum("BTD,VD->BTV", x, w, preferred_element_type=jnp.float32)

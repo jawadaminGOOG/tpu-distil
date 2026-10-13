@@ -17,7 +17,7 @@ import tasks  # noqa: E402
 
 
 def test_registry():
-  assert tasks.NAMES == ("bird", "finqa")
+  assert tasks.NAMES == ("bird", "finqa", "math")
   assert tasks.get_task("bird") is bird  # `import bird` is the task module itself, not a copy
   for name in tasks.NAMES:
     t = tasks.get_task(name)
