@@ -69,6 +69,23 @@ def test_only_the_response_and_end_of_turn_are_trained():
   assert r.input_ids.shape == (256,) and np.all(r.input_ids[r.n_real:] == 0)
 
 
+def test_truncated_grpo_record_trains_the_response_but_not_the_end_of_turn():
+  r = dc.render_example(_rec(reward=0.0, truncated=True), _CharTokenizer(), max_seq_len=256)
+  trained = "".join(chr(int(t) - 1) for t, w in zip(r.input_ids, r.loss_weight) if w > 0)
+  assert trained == "ANSWER" and r.n_trained == len("ANSWER")
+  full = dc.render_example(_rec(reward=0.0), _CharTokenizer(), max_seq_len=256)
+  assert np.array_equal(full.input_ids, r.input_ids)  # same tokens; only the end-of-turn weight differs
+  assert int((full.loss_weight > 0).sum()) - r.n_trained == len("<|im_end|>")
+
+
+def test_truncated_must_be_a_bool_on_a_grpo_row():
+  with pytest.raises(TypeError):
+    _rec(reward=0.0, truncated="yes")
+  with pytest.raises(ValueError, match="only GRPO rows"):
+    _rec(truncated=True)
+  assert _rec(reward=1.0).truncated is False
+
+
 def test_loss_mask_assertion_and_alignment():
   w = np.zeros(256, np.float32)
   seg = np.full(256, dc.SEG["prompt"], np.uint8)

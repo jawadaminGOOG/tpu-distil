@@ -37,6 +37,8 @@ QUESTIONS = {
     "train-4": [(_resp("SELECT 1"), True, "length"), (_resp("SELECT 2"), False, "stop"),
                 ("<think>x</think>" + _resp("SELECT 1"), True, "stop"), (_resp("SELECT 1 "), True, "stop")],
     "train-5": [(_resp("SELECT 1"), True, "stop"), (_resp("SELECT 2"), False, "stop")],     # wrong size
+    # finished samples all correct, one cut off: uniform unless truncated samples are kept (as wrong)
+    "train-6": [(_resp("SELECT 1"), True, "stop")] * 3 + [(_resp("SELECT 1") + " and so on", True, "length")],
 }
 
 
@@ -73,9 +75,24 @@ def test_mixed_groups_rewards_and_drops(tmp_path):
   r4 = {r["id"]: r["reward"] for r in rows if r["group_id"] == "train-4"}
   assert r4 == {"train-4#s1": 0.0, "train-4#s3": 1.0}  # s0 truncated and s2 think markup were dropped
   m = json.loads((tmp_path / "roll.jsonl.manifest.json").read_text())["counts"]
-  assert m["dropped_truncated"] == 1 and m["dropped_think_markup"] == 1 and m["groups_wrong_size"] == 1
+  assert m["dropped_truncated"] == 2 and m["dropped_think_markup"] == 1 and m["groups_wrong_size"] == 1
   assert all(set(r) == {"id", "messages", "response", "group_id", "reward", "db_id"} for r in rows)
   assert all(r["messages"][-1] == {"role": "user", "content": f"Question {r['group_id']}?"} for r in rows)
+
+
+def test_keep_truncated_scores_cut_off_samples_as_wrong(tmp_path):
+  proc, out = _run(tmp_path, "--keep-truncated")
+  assert proc.returncode == 0, proc.stderr
+  rows = {r["id"]: r for r in map(json.loads, out.read_text().splitlines())}
+  assert {r["group_id"] for r in rows.values()} == {"train-1", "train-4", "train-6"}
+  # train-4 s0 holds a correct answer but was cut off: kept with reward 0 and marked
+  assert rows["train-4#s0"]["reward"] == 0.0 and rows["train-4#s0"]["truncated"] is True
+  assert [rows[f"train-6#s{k}"]["reward"] for k in range(4)] == [1.0, 1.0, 1.0, 0.0]
+  assert rows["train-6#s3"]["truncated"] is True and "truncated" not in rows["train-6#s0"]
+  assert all("truncated" not in r for i, r in rows.items() if i.startswith("train-1"))
+  m = json.loads((tmp_path / "roll.jsonl.manifest.json").read_text())
+  assert m["counts"]["kept_truncated_reward_0"] == 2 and "dropped_truncated" not in m["counts"]
+  assert m["args"]["keep_truncated"] is True
 
 
 def test_max_groups_is_seeded(tmp_path):

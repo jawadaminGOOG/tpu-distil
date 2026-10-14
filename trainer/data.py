@@ -58,8 +58,10 @@ class Record:
   JSONL layout: {"id", "messages": [{"role", "content"}, ...], "response", "db_id"?, "group_id"?,
   "reward"?}. `messages` is the prompt exactly as the model is served it (system and user
   messages, ending with a user message); `response` is the assistant text, trained verbatim.
-  SFT rows have no reward; GRPO rows carry `group_id` (the question) and `reward`. Other keys
-  (for example "sample" or "served_model") are provenance and are ignored here.
+  SFT rows have no reward; GRPO rows carry `group_id` (the question) and `reward`. A GRPO row
+  marked `truncated` was cut off by the sampling length limit: its end-of-turn token carries no loss
+  (the policy never emitted it). Other keys (for example "sample" or "served_model") are provenance
+  and are ignored here.
   """
 
   id: str
@@ -68,6 +70,7 @@ class Record:
   db_id: str | None = None
   group_id: str | None = None
   reward: float | None = None
+  truncated: bool = False
 
   @classmethod
   def from_dict(cls, d: dict[str, Any]) -> Record:
@@ -84,8 +87,14 @@ class Record:
     if msgs[-1]["role"] != "user":
       raise ValueError(f"{rid}: messages must end with a user message")
     reward = d.get("reward")
+    truncated = d.get("truncated", False)
+    if not isinstance(truncated, bool):
+      raise TypeError(f"{rid}: truncated must be true or false")
+    if truncated and reward is None:
+      raise ValueError(f"{rid}: only GRPO rows (with a reward) may be truncated")
     return cls(id=rid, messages=tuple({"role": m["role"], "content": m["content"]} for m in msgs), response=response,
-               db_id=d.get("db_id"), group_id=d.get("group_id"), reward=None if reward is None else float(reward))
+               db_id=d.get("db_id"), group_id=d.get("group_id"), reward=None if reward is None else float(reward),
+               truncated=truncated)
 
 
 def load_records(path: str) -> list[Record]:
@@ -145,8 +154,9 @@ class Rendered:
   n_trained: int
 
 
-def _char_spans(text: str, msgs: Sequence[Msg]) -> tuple[np.ndarray, np.ndarray]:
-  """Per-character (segment code, weight) for a rendered chat string."""
+def _char_spans(text: str, msgs: Sequence[Msg], train_eot: bool = True) -> tuple[np.ndarray, np.ndarray]:
+  """Per-character (segment code, weight) for a rendered chat string. With train_eot=False the
+  end-of-turn marker after the response stays template (weight 0)."""
   seg = np.full(len(text), SEG["template"], dtype=np.uint8)
   w = np.zeros(len(text), dtype=np.float32)
   cursor = 0
@@ -176,7 +186,8 @@ def _char_spans(text: str, msgs: Sequence[Msg]) -> tuple[np.ndarray, np.ndarray]
     seg[start:end] = SEG[m.seg]
     if m.weight:
       w[start:end] = m.weight
-      eot = next((t for t in END_OF_TURN if text.startswith(t, end)), None) if m.role == "assistant" else None
+      eot = (next((t for t in END_OF_TURN if text.startswith(t, end)), None)
+             if m.role == "assistant" and train_eot else None)
       if eot:
         # Train the end-of-turn token so the student learns to stop.
         seg[end : end + len(eot)] = SEG["assistant"]
@@ -196,7 +207,7 @@ def render_example(rec: Record, tokenizer: Any, *, max_seq_len: int, overlong: s
   msgs = record_to_messages(rec)
   chat = [{"role": m.role, "content": m.content} for m in msgs]
   text = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=False)
-  cseg, cw = _char_spans(text, msgs)
+  cseg, cw = _char_spans(text, msgs, train_eot=not rec.truncated)
   enc = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
   ids = np.asarray(enc["input_ids"], dtype=np.int32)
   offs = enc["offset_mapping"]

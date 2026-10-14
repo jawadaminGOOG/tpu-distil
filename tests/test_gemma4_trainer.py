@@ -180,3 +180,15 @@ def test_only_the_response_and_turn_close_are_trained_and_the_prompt_is_the_serv
   assert tok.decode(ids[r.loss_weight[: r.n_real] > 0]) == "1+1=2.\n\\boxed{2}<turn|>"
   serving = tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
   assert tok.decode(ids).startswith(serving) and serving.endswith("<|turn>model\n")
+
+
+def test_truncated_grpo_record_leaves_turn_close_out_of_the_loss():
+  import data as dc  # pylint: disable=g-import-not-at-top
+
+  tok = _gemma_tokenizer()
+  msgs = [{"role": "system", "content": "You are an expert mathematician."},
+          {"role": "user", "content": "Problem: 1+1?\n\nReason step by step, briefly."}]
+  rec = dc.Record.from_dict({"id": "train-0#s0", "messages": msgs, "response": "1+1 is, let me think, 2 and",
+                             "reward": 0.0, "truncated": True})
+  r = dc.render_example(rec, tok, max_seq_len=256)
+  assert tok.decode(r.input_ids[: r.n_real][r.loss_weight[: r.n_real] > 0]) == "1+1 is, let me think, 2 and"
