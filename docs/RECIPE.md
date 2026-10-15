@@ -1,6 +1,6 @@
 # How the recipe ran
 
-The machines, libraries, settings and checks of the README's runs, stage by stage. Sections 1–7 describe the BIRD run. Section 8 lists what changed for FinQA.
+The machines, libraries, settings and checks of the README's runs, stage by stage. Sections 1–7 describe the BIRD run. Section 8 lists what changed for FinQA, and section 9 what changed for MATH with a Gemma 4 student, including the self-distillation recipe.
 
 ## Machines
 
@@ -126,6 +126,30 @@ The same machines, libraries, trainer and settings ran FinQA. Each pipeline scri
 
 The first FinQA prompt (`finqa-1`) offered `Answer: yes` / `Answer: no` on every question. The base student then answered yes or no on 363 numeric test questions. We changed the prompt before any teacher output or training. We chose the new prompt on dev: the not-a-number failures of the base student fell from 262 to 65.
 
+## 9. Third task: MATH with a Gemma 4 E2B student
+
+The same machines, trainer and settings, with a second student family and task. Each pipeline script takes `--task math` (`distil/tasks/hendrycks_math.py`); the trainer picks the model loader from the checkpoint's `config.json`.
+
+| Stage | MATH, Gemma 4 E2B |
+|---|---|
+| Data | MATH train 7,500 and test 5,000 problems (`EleutherAI/hendrycks_math`, converted to JSONL with a `source` id). Test is the evaluation set. Dev is 1/15 of train (500 problems), held out with a fixed seed and stratified by subject. |
+| Leak filter | Removed 13 training problems identical to a test or dev problem (same text fingerprint, the task's group) and 725 that share a 13-word sequence with one. Much of MATH's wording is shared boilerplate, so this filter is strict. 6,262 training problems remain. |
+| Prompt | System: "You are an expert mathematician." User: the problem and an instruction to reason briefly and end with `\boxed{<answer>}`. Version `math-1`; the run records its SHA-256. |
+| Grading | The last `\boxed{...}` (balanced braces), compared with the gold boxed answer after the reference `strip_string` normalisation. Controls on test: gold 100%, shuffled within subject 0.0%. Two training problems have an empty gold box and can never be matched. |
+| Student | Gemma 4 E2B-it, bf16, text decoder only (vision and audio weights are copied unchanged on export). Non-thinking by the template default. |
+| Serving | `serve_small.sh` with `MODEL_IMPL_TYPE=flax_nnx` (the JAX Gemma 4 model; the default PyTorch path fails in warm-up) and `EXTRA_ARGS="--chat-template-content-format string"`. Without that flag vLLM passes the system message to the Gemma 4 template as a list, and the template prints it as Python text. A `/tokenize` check against `apply_chat_template` on 16 prompts must match exactly. First start compiles for about 17 minutes per model directory. |
+| Parity | vLLM refuses prompt log-probabilities for multimodal architectures, so `parity_check.py --positions generated` scores vLLM's own 64-token greedy continuation of each prompt: top-1 0.994, mean KL 5.8e-4 over 864 positions. |
+| Trainer | Tunix Gemma 4 with per-layer embeddings and KV sharing. LoRA rank 256 on q, o, gate, up, down in all 35 layers and on the fused k/v projection in the 15 layers that compute their own K/V (190 modules); the export splits the fused delta into `k_proj` and `v_proj`. The LM head applies the final logit soft-cap (30·tanh(z/30)) in float32. Micro-batch 8 at 8,192 tokens uses 15.9 GiB per chip. |
+| Teacher data | 4 samples per problem at temperature 0.7, top-p 0.95, 4,096 tokens: 25,048 answers, 93.5% correct. Correct answers to one problem share one normalised answer, so "at most 4 distinct answers" keeps one row per problem: 6,021 rows. |
+| Self-distillation data | 8 student samples per problem at temperature 0.7, top-p 0.95, 2,048 tokens: 50,096 answers, 72.6% correct, 5,237 rows. Both sets are drawn to N = 4,992 (the FinQA rule 256·k + 128); leak audit clean. |
+| SFT | Same settings as BIRD: 57 optimiser steps over 3 epochs. KD loss fell from 2.09 to 0.20. |
+| GRPO | Same settings as BIRD and FinQA, from the self-distilled checkpoint with the KL to it. Rollouts at 2,048 tokens: about 17% of samples hit the limit. With truncated rollouts dropped, 566–603 problems per iteration had mixed outcomes and the iterations ran 59–64 steps. With `--keep-truncated`, 1,269–1,387 problems (one iteration: 672, see below) and 159–173 steps (84 in the short iteration). Highest step KL 0.013 with truncated rollouts dropped and 0.017 with them kept; the guard never stopped a run. |
+| Evaluation | One run per stage with base on two replicas; 2,048-token limit; test and dev. Iteration 6 was fixed as the final arm before each run. |
+
+**Truncated rollouts.** A response cut off by the length limit never emitted an end-of-turn token, so training it as written would teach a stop the policy never made; the original builder therefore dropped such responses. For a student whose errors are mostly unfinished answers, dropping them hides its main failure from the reward. `build_grpo_rollouts.py --keep-truncated` keeps them with reward 0 and the field `"truncated": true`; `trainer/data.py` then gives the trailing end-of-turn token weight 0, so the update lowers the probability of exactly the tokens the policy produced. Responses with thinking markup are still dropped.
+
+**Outage.** In the second GRPO iteration of the final self-distillation run, the TPU VM was unavailable for seven hours while rollouts were being collected. 2,895 of 6,262 problems returned errors after the client's retries, and the iteration trained on the other 3,367. A driver must refuse to build records when any rollout request failed.
+
 ## Problems and fixes
 
 | Problem | Fix |
@@ -136,6 +160,12 @@ The first FinQA prompt (`finqa-1`) offered `Answer: yes` / `Answer: no` on every
 | Host maintenance rebooted the TPU VM | Clients waited and resumed |
 | Two replicas of the same weights gave different greedy text on 45% of FinQA test questions (different final answers on 23%) | Every comparison uses arms from one run; two base replicas measure the noise floor in each run |
 | The teacher takes about 25 minutes to start from zero | Keep-warm loop during teacher stages |
+| Gemma 4 on vLLM-TPU: warm-up fails on the default PyTorch model path (`'Tensor' object has no attribute '_elem'`) | `MODEL_IMPL_TYPE=flax_nnx` |
+| Gemma 4 on vLLM-TPU: the system message rendered as a Python list (8 of 16 prompts differed from `apply_chat_template`) | `--chat-template-content-format string`; outputs from before the fix were discarded and rerun |
+| vLLM refuses prompt log-probabilities for multimodal models, and the engine stops | Parity on vLLM's generated continuation (`--positions generated`) |
+| qwix traces LoRA targets on a 2-token input that the splash attention kernel refuses | Trace with flash attention off, then restore it |
+| Newer transformers versions do not save the unused k/v weights of Gemma 4's KV-shared layers | Tests write them, as the released checkpoint has them |
+| The TPU VM was unavailable for seven hours during rollouts; the driver trained on partial rollouts | Disclosed; drivers must stop when any rollout request failed |
 
 ## Reproduce
 

@@ -98,7 +98,7 @@ def header(r):
 
 def pipeline(x, y, w, h, stages):
   o = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="{SURFACE}" stroke="{RULE}" stroke-width="2"/>',
-       t(x + 26, y + 44, "The recipe, end to end", size=27, font=HEAD)]
+       t(x + 26, y + 44, "The KD recipe, end to end (BIRD run)", size=27, font=HEAD)]
   n = len(stages)
   gap = 70
   bw = (w - 52 - gap * (n - 1)) / n
@@ -128,39 +128,40 @@ def pipeline(x, y, w, h, stages):
 def ladder(x, y, w, h, tasks):
   o = card(x, y, w, h, "Accuracy ladder", "Final same-run evaluation per task · dashed line = teacher")
   px0, py0, pw, ph = x + 70, y + h - 70, w - 100, h - 170
+  top = 100
   o += [line(px0, py0, px0 + pw, py0, MUTED, 1.5)]
-  for v in (20, 40, 60, 80):
-    yy = py0 - ph * v / 80
+  for v in (20, 40, 60, 80, 100):
+    yy = py0 - ph * v / top
     o += [line(px0, yy, px0 + pw, yy, GRID, 1), t(px0 - 10, yy + 5, f"{v}%", size=13, fill=MUTED, anchor="end")]
   gw = pw / len(tasks)
   for gi, task in enumerate(tasks):
-    arms = [("base", task["ladder"]["base"]), ("kd", task["ladder"]["kd"]), ("rl", task["ladder"].get("rl"))]
-    bw = 70
-    gx = px0 + gi * gw + (gw - 3 * bw - 2 * 14) / 2
-    for ai, (k, v) in enumerate(arms):
-      bx = gx + ai * (bw + 14)
-      if v is None:
-        o.append(f'<rect x="{bx:.1f}" y="{py0 - ph * 0.5:.1f}" width="{bw}" height="{ph * 0.5:.1f}" rx="6" fill="none" stroke="{MUTED}" stroke-width="2" stroke-dasharray="6 5"/>')
-        o.append(t(bx + bw / 2, py0 - ph * 0.5 - 10, "running", size=13, fill=MUTED, anchor="middle"))
+    arms = task["arms"]
+    gap = 8
+    bw = min(64, (gw - 30 - gap * (len(arms) - 1)) / len(arms))
+    span = len(arms) * bw + (len(arms) - 1) * gap
+    gx = px0 + gi * gw + (gw - span) / 2
+    for ai, (k, label, v) in enumerate(arms):
+      bx = gx + ai * (bw + gap)
+      o.append(vbar(bx, py0, bw, ph * v / top, ARM[k]))
+      if ph * (task["teacher"] - v) / top < 32:  # label inside the bar when it would touch the teacher line
+        o.append(t(bx + bw / 2, py0 - ph * v / top + 22, f"{v:.1f}", size=15, weight=800, fill=ON[ARM[k]], anchor="middle"))
       else:
-        o.append(vbar(bx, py0, bw, ph * v / 80, ARM[k]))
-        if ph * (task["teacher"] - v) / 80 < 20:  # label inside the bar when it would touch the teacher line
-          o.append(t(bx + bw / 2, py0 - ph * v / 80 + 24, f"{v:.1f}", size=17, weight=800, fill=ON[ARM[k]], anchor="middle"))
-        else:
-          o.append(t(bx + bw / 2, py0 - ph * v / 80 - 10, f"{v:.1f}", size=17, weight=800, anchor="middle"))
-      o.append(t(bx + bw / 2, py0 + 22, {"base": "Base", "kd": "KD", "rl": "KD+GRPO"}[k], size=14, fill=MUTED, anchor="middle"))
-    ty = py0 - ph * task["teacher"] / 80
-    o.append(line(gx - 12, ty, gx + 3 * bw + 2 * 14 + 12, ty, INK, 2, "7 5"))
-    o.append(t(gx + 3 * bw + 2 * 14 + 12, ty - 8, f'Teacher {task["teacher"]:.1f}', size=13.5, anchor="end"))
-    o.append(t(gx + (3 * bw + 28) / 2, py0 + 48, task["label"], size=17, weight=800, anchor="middle"))
+        o.append(t(bx + bw / 2, py0 - ph * v / top - 9, f"{v:.1f}", size=15, weight=800, anchor="middle"))
+      for li, part in enumerate(label.split("|")):
+        o.append(t(bx + bw / 2, py0 + 19 + li * 15, part, size=12.5, fill=MUTED, anchor="middle"))
+    ty = py0 - ph * task["teacher"] / top
+    o.append(line(gx - 10, ty, gx + span + 10, ty, INK, 2, "7 5"))
+    o.append(t(gx + span + 10, ty - 8, f'Teacher {task["teacher"]:.1f}', size=13, anchor="end"))
+    o.append(t(gx + span / 2, py0 + 56, task["label"], size=15.5, weight=800, anchor="middle"))
   return o
 
 
 def decomposition(x, y, w, h, tasks, paired):
   o = card(x, y, w, h, "Where the gain comes from", "KD gain over base, split by the self-distillation control")
   bx, bw = x + 110, w - 190
+  tasks = [tk for tk in tasks if "decomp" in tk]
   m = max(tk["decomp"]["total"] for tk in tasks)
-  yy = y + 96
+  yy = y + 92
   for tk in tasks:
     d = tk["decomp"]
     s_len, t_len = bw * d["self"] / m, bw * d["teacher"] / m
@@ -170,15 +171,15 @@ def decomposition(x, y, w, h, tasks, paired):
     o.append(t(bx + s_len / 2, yy + 24, f'+{d["self"]:.1f}', size=15, weight=800, fill=ON[ARM["self"]], anchor="middle"))
     o.append(t(bx + s_len + t_len / 2, yy + 24, f'+{d["teacher"]:.1f}', size=15, weight=800, fill=ON[ARM["kd"]], anchor="middle"))
     o.append(t(bx + s_len + t_len + 8, yy + 24, f'= +{d["total"]:.1f}', size=15, weight=700))
-    yy += 52
+    yy += 48
   o.append(f'<rect x="{x + 26}" y="{yy + 4}" width="16" height="16" rx="3" fill="{ARM["self"]}"/>')
   o.append(t(x + 50, yy + 17, "in-domain fine-tuning (self-distillation)", size=14, fill=MUTED))
   o.append(f'<rect x="{x + 360}" y="{yy + 4}" width="16" height="16" rx="3" fill="{ARM["kd"]}"/>')
   o.append(t(x + 384, yy + 17, "added by the teacher's answers", size=14, fill=MUTED))
-  yy += 62
+  yy += 50
   o.append(t(x + 26, yy, "Paired differences, 95% CI (KD rows: control runs)", size=16, weight=800))
   for task, label, val, ci in paired:
-    yy += 26
+    yy += 24
     o.append(line(x + 26, yy - 18, x + w - 26, yy - 18, RULE, 1))
     o.append(t(x + 26, yy, task, size=14.5, weight=700))
     o.append(t(x + 110, yy, label, size=14.5, fill=MUTED))
@@ -222,6 +223,23 @@ def funnel(x, y, w, h, f):
       o.append(hbar(bx, yy + 4 + i * 30, bw * v / m, 24, col))
       o.append(t(bx + bw * v / m + 8, yy + 21 + i * 30, f"{v:,}", size=14, weight=700))
     yy += 150
+  return o
+
+
+def recipes(x, y, w, h, items):
+  """Two stacked recipe boxes: which recipe for which student, with the evidence for each."""
+  o = card(x, y, w, h, "Two recipes", "The self-distillation control decides which one a student needs")
+  bh = (h - 106 - 14) / len(items)
+  yy = y + 90
+  for it in items:
+    col = ARM[it["arm"]]
+    o.append(f'<rect x="{x + 26}" y="{yy:.1f}" width="{w - 52}" height="{bh:.1f}" rx="14" fill="{PAPER}" stroke="{RULE}" stroke-width="2"/>')
+    o.append(f'<rect x="{x + 26}" y="{yy + 14:.1f}" width="7" height="{bh - 28:.1f}" rx="3.5" fill="{col}"/>')
+    o.append(t(x + 48, yy + 34, it["when"], size=14, weight=700, fill=MUTED))
+    o.append(t(x + 48, yy + 62, it["recipe"], size=21, font=HEAD))
+    for j, ln in enumerate(it["lines"]):
+      o.append(t(x + 48, yy + 90 + j * 22, ln, size=14.5, fill=INK if j == 0 else MUTED, weight=700 if j == 0 else 400))
+    yy += bh + 14
   return o
 
 
@@ -292,7 +310,7 @@ def render(r: dict, fonts: Path | None) -> str:
   o += ladder(56, 572, 760, 440, r["tasks"])
   o += cost_bars(836, 572, 760, 440, r["cost"], r["cost_ratio"])
   o += decomposition(1616, 572, 728, 440, r["tasks"], r["paired"])
-  o += funnel(56, 1028, 760, 416, r["funnel"])
+  o += recipes(56, 1028, 760, 416, r["recipes"])
   o += compute(836, 1028, 760, 416, r["compute"])
   o += recipe_card(1616, 1028, 728, 416, r["recipe_card"])
   o.append("</svg>")

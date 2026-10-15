@@ -1,17 +1,17 @@
 {
  "title": "TPU-Distil: strong teacher, small TPU student",
- "subtitle": "Distil DeepSeek-V4.1-Flash into Qwen3-1.7B, reinforce it with GRPO, and serve it on one Cloud TPU v6e chip",
- "setup": "Text-to-SQL (BIRD dev, 1,534 questions)  ·  financial QA (FinQA test, 1,147 questions)  ·  same-run paired evaluation",
+ "subtitle": "Qwen3-1.7B and Gemma 4 E2B students: teacher- or self-distilled, then GRPO, served on one TPU v6e chip",
+ "setup": "Text-to-SQL (BIRD dev, 1,534)  ·  financial QA (FinQA test, 1,147)  ·  competition math (MATH test, 5,000)  ·  same-run paired evaluation",
  "kpis": [
   [
-   "+18 / +23",
-   "points from distillation",
-   "BIRD / FinQA, final runs"
+   "+22 / +28",
+   "points over base",
+   "KD + GRPO · BIRD / FinQA"
   ],
   [
-   "+4.0 / +5.8",
-   "more points from GRPO",
-   "BIRD / FinQA, 95% CIs above 0"
+   "+3.5",
+   "points over base",
+   "self-distil + GRPO · MATH"
   ],
   [
    "16–17×",
@@ -38,8 +38,8 @@
    "CIs on every comparison"
   ],
   [
-   "2",
-   "task families, one recipe"
+   "3",
+   "tasks · 2 students · 2 recipes"
   ],
   [
    "1:1",
@@ -101,49 +101,81 @@
   {
    "label": "BIRD text-to-SQL",
    "teacher": 60.7,
-   "ladder": {
-    "base": 30.6,
-    "kd": 48.2,
-    "rl": 52.2
-   },
    "decomp": {
     "self": 5.0,
     "teacher": 13.1,
     "total": 18.1
    },
-   "short": "BIRD"
+   "short": "BIRD",
+   "arms": [
+    [
+     "base",
+     "Base",
+     30.6
+    ],
+    [
+     "kd",
+     "KD",
+     48.2
+    ],
+    [
+     "rl",
+     "KD+|GRPO",
+     52.2
+    ]
+   ]
   },
   {
    "label": "FinQA financial QA",
    "teacher": 75.7,
-   "ladder": {
-    "base": 44.0,
-    "kd": 66.6,
-    "rl": 72.5
-   },
    "decomp": {
     "self": 14.6,
     "teacher": 9.6,
     "total": 24.1
    },
-   "short": "FinQA"
+   "short": "FinQA",
+   "arms": [
+    [
+     "base",
+     "Base",
+     44.0
+    ],
+    [
+     "kd",
+     "KD",
+     66.6
+    ],
+    [
+     "rl",
+     "KD+|GRPO",
+     72.5
+    ]
+   ]
+  },
+  {
+   "label": "MATH competition math",
+   "short": "MATH",
+   "teacher": 92.5,
+   "arms": [
+    [
+     "base",
+     "Base",
+     74.9
+    ],
+    [
+     "self",
+     "Self-|distil",
+     76.6
+    ],
+    [
+     "rl",
+     "Self+|GRPO",
+     78.4
+    ]
+   ]
   }
  ],
  "cost_ratio": 15.8,
- "funnel": {
-  "BIRD": [
-   33728,
-   20133,
-   10504,
-   10112
-  ],
-  "FinQA": [
-   24436,
-   18487,
-   6133,
-   6016
-  ]
- },
  "compute": {
   "stages": [
    [
@@ -180,8 +212,8 @@
  },
  "recipe_card": [
   [
-   "Student",
-   "Qwen3-1.7B, non-thinking"
+   "Students",
+   "Qwen3-1.7B · Gemma 4 E2B, non-thinking"
   ],
   [
    "Teacher",
@@ -189,15 +221,15 @@
   ],
   [
    "Adapter",
-   "LoRA r256 · alpha 512 · 7 projections"
+   "LoRA r256 · alpha 512 · attention + MLP"
   ],
   [
    "SFT",
    "lr 1e-4 · batch 256 · 3 epochs"
   ],
   [
-   "Sequence",
-   "≤ 8,192 tokens · 2k/4k/8k buckets"
+   "Strong student",
+   "own verified answers · cut-off = wrong"
   ],
   [
    "GRPO",
@@ -253,15 +285,6 @@
  "paired": [
   [
    "BIRD",
-   "distilled vs base",
-   18.1,
-   [
-    15.6,
-    20.6
-   ]
-  ],
-  [
-   "BIRD",
    "distilled vs self-distilled",
    13.1,
    [
@@ -276,15 +299,6 @@
    [
     2.2,
     5.9
-   ]
-  ],
-  [
-   "FinQA",
-   "distilled vs base",
-   24.1,
-   [
-    21.0,
-    27.2
    ]
   ],
   [
@@ -304,6 +318,55 @@
     3.9,
     7.8
    ]
+  ],
+  [
+   "MATH",
+   "distilled vs self-distilled",
+   -4.3,
+   [
+    -5.4,
+    -3.2
+   ]
+  ],
+  [
+   "MATH",
+   "self + GRPO vs self-distilled",
+   1.8,
+   [
+    1.0,
+    2.7
+   ]
+  ],
+  [
+   "MATH",
+   "self + GRPO vs base",
+   3.5,
+   [
+    2.6,
+    4.4
+   ]
   ]
+ ],
+ "recipes": [
+  {
+   "arm": "kd",
+   "when": "Student weak in the domain",
+   "recipe": "KD + GRPO",
+   "lines": [
+    "Qwen3-1.7B: BIRD 30.6 → 52.2 · FinQA 44.0 → 72.5",
+    "teacher answers beat self-distillation by +13.1 / +9.6",
+    "GRPO then adds +4.0 / +5.8"
+   ]
+  },
+  {
+   "arm": "self",
+   "when": "Student already strong in the domain",
+   "recipe": "Self-distillation + GRPO",
+   "lines": [
+    "Gemma 4 E2B: MATH 74.9 → 78.4 (teacher 92.5)",
+    "teacher answers hurt (KD −2.3); its own help (+1.9)",
+    "GRPO that scores cut-off answers as wrong: +1.8"
+   ]
+  }
  ]
 }
