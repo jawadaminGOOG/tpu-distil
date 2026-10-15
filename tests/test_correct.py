@@ -87,3 +87,61 @@ def test_feedback_shows_row_count_and_caps_rows(tmp_path):
   fb = correct.feedback(db, "SELECT v FROM n")
   assert fb.startswith("returned 9 row(s) (first 5 shown)") and fb.count("\n") == 6
   assert correct.feedback(db, None).startswith("could not be found")
+
+
+# ---------------------------------------------------------------------------
+# --task math
+# ---------------------------------------------------------------------------
+
+
+def _math_root(tmp_path: Path) -> Path:
+  d = tmp_path / "math"
+  d.mkdir()
+  rows = [{"source": f"train/algebra/{i}", "subject": "algebra", "problem": f"Compute {i} + {i}.", "level": "Level 1",
+           "type": "Algebra", "solution": f"So $\\boxed{{{2 * i}}}$."} for i in range(30)]
+  (d / "train.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+  (d / "test.jsonl").write_text(json.dumps({**rows[0], "source": "test/algebra/0", "problem": "Compute 100 + 1."}) + "\n")
+  return d
+
+
+def test_math_correction_prompts_name_only_the_students_answer(tmp_path):
+  from tasks import hendrycks_math as hm  # pylint: disable=import-outside-toplevel
+  root = _math_root(tmp_path)
+  items = hm.load_items(root, "train")
+  prompts = tmp_path / "p.jsonl"
+  prompts.write_text("".join(json.dumps({"id": it.id, "problem_hash": it.problem_hash, "split": "train",
+                                         "messages": hm.messages(it)}) + "\n" for it in items[:3]))
+  a, b, c = items[0], items[1], items[2]
+  gen = {a.id: [(f"\\boxed{{{a.gold}}}", "stop"), ("So \\boxed{999}", "stop"), ("still thinking", "length")],
+         b.id: [("I give up.", "stop")],
+         c.id: [("Let me ramble on and on", "length"), ("\\boxed{0}", "stop")]}
+  (tmp_path / "g.jsonl").write_text("".join(json.dumps({"id": q, "choices": [{"content": t, "finish_reason": f}
+                                                                            for t, f in v]}) + "\n" for q, v in gen.items()))
+  graded = []
+  for q, v in gen.items():
+    gold = next(it.gold for it in items if it.id == q)
+    for k, (t, f) in enumerate(v):
+      pred = hm.extract_answer(t)
+      graded.append({"id": q, "sample": k, "pred_answer": pred, "correct": hm.score(pred, gold)[0], "error": ""})
+  (tmp_path / "gr.jsonl").write_text("".join(json.dumps(r) + "\n" for r in graded))
+  out = tmp_path / "corr.jsonl"
+  proc = subprocess.run([sys.executable, str(DISTIL / "correct.py"), "--task", "math", "--root", str(root), "--prompts",
+                         str(prompts), "--gen", str(tmp_path / "g.jsonl"), "--graded", str(tmp_path / "gr.jsonl"),
+                         "--out", str(out)], capture_output=True, text=True)
+  assert proc.returncode == 0, proc.stderr
+  rows = {r["id"]: r for r in map(json.loads, out.read_text().splitlines())}
+  assert rows[a.id]["source_sample"] == 1 and "gives the final answer 999, which is wrong." in rows[a.id]["messages"][-1]["content"]
+  assert "does not give a final answer" in rows[b.id]["messages"][-1]["content"]
+  assert rows[c.id]["source_sample"] == 0 and "was cut off at the length limit" in rows[c.id]["messages"][-1]["content"]
+  for r in rows.values():
+    user = r["messages"][-1]["content"]
+    gold = next(it.gold for it in items if it.id == r["id"])
+    assert f"\\boxed{{{gold}}}" not in user.replace(r["student_response"], "")
+    assert user.startswith(hm.messages(next(it for it in items if it.id == r["id"]))[-1]["content"])
+  assert json.loads(proc.stdout)["feedback_kinds"] == {"wrong_answer": 1, "no_answer": 1, "truncated": 1}
+
+
+def test_math_feedback_refuses_to_name_the_gold():
+  import pytest  # pylint: disable=import-outside-toplevel
+  with pytest.raises(ValueError):
+    correct.math_feedback("\\boxed{1/2}", "stop", "\\frac12", "\\dfrac{1}{2}")
