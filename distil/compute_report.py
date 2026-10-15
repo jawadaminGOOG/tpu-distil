@@ -21,6 +21,10 @@ FLOP model (per token, bf16 matmuls; norms, softmax and element-wise ops ignored
   forward  = 2 x (decoder matmul params + LM-head params) + attention 4 x L x (heads x head_dim) x s / 2
              (s = mean sequence length of the run; causal attention averages s/2 keys per query),
   adapters = 2 x LoRA params (rank r on q,k,v,o,gate,up,down of every layer).
+  Gemma 4 (config.json with a gemma4_text text_config): per-layer head width (sliding vs global),
+  no k/v projections in the KV-shared layers, double-wide MLPs where configured, the per-layer-input
+  gate/projection matmuls and the per-layer model projection; attention in a sliding layer averages
+  min(s/2, window) keys; adapters as the trainer applies them (fused k/v only in layers with their own K/V).
   LoRA SFT/GRPO update, model FLOPs    = 2 x forward (forward + activation gradients; frozen weights get
                                           no weight gradients) + 3 x adapter forward,
   LoRA SFT/GRPO update, hardware FLOPs = model FLOPs + 1 x forward + 1 x adapter forward (decoder
@@ -50,7 +54,31 @@ def load(p):
   return json.loads(Path(p).read_text())
 
 
+def gemma4_dims(cfg: dict, rank: int) -> dict:
+  t = cfg["text_config"]
+  h, L, ffn, v = t["hidden_size"], t["num_hidden_layers"], t["intermediate_size"], t["vocab_size"]
+  p = t.get("hidden_size_per_layer_input") or 0
+  unshared = L - t.get("num_kv_shared_layers", 0)
+  decoder, lora, attn = h * L * p, 0, []
+  for i, kind in enumerate(t["layer_types"]):
+    full = kind == "full_attention"
+    hd = t["global_head_dim"] if full else t["head_dim"]
+    q_out, kv_out = t["num_attention_heads"] * hd, t["num_key_value_heads"] * hd
+    f = 2 * ffn if (t.get("use_double_wide_mlp") and i >= unshared) else ffn
+    decoder += 2 * h * q_out + 3 * h * f + 2 * h * p
+    lora += rank * (h + q_out) * 2 + rank * (h + f) * 3
+    if i < unshared:
+      decoder += 2 * h * kv_out
+      lora += rank * (h + 2 * kv_out)
+    attn.append((q_out, None if full else t["sliding_window"]))
+  return {"decoder_matmul_params": decoder, "lm_head_params": h * v,
+          "embedding_tied": bool(cfg.get("tie_word_embeddings", t.get("tie_word_embeddings"))),
+          "lora_params": lora, "layers": L, "attn_width": sum(w for w, _ in attn) / L, "attn_terms": attn}
+
+
 def model_dims(cfg: dict, rank: int) -> dict:
+  if cfg.get("model_type") == "gemma4":
+    return gemma4_dims(cfg, rank)
   h, L, ffn, v = cfg["hidden_size"], cfg["num_hidden_layers"], cfg["intermediate_size"], cfg["vocab_size"]
   q_out = cfg["num_attention_heads"] * cfg["head_dim"]
   kv_out = cfg["num_key_value_heads"] * cfg["head_dim"]
@@ -63,6 +91,9 @@ def model_dims(cfg: dict, rank: int) -> dict:
 
 
 def forward_flops(d: dict, seq_len: float) -> float:
+  if "attn_terms" in d:
+    attn = sum(4 * w * (seq_len / 2 if win is None else min(seq_len / 2, win)) for w, win in d["attn_terms"])
+    return 2 * (d["decoder_matmul_params"] + d["lm_head_params"]) + attn
   return 2 * (d["decoder_matmul_params"] + d["lm_head_params"]) + 4 * d["layers"] * d["attn_width"] * seq_len / 2
 
 

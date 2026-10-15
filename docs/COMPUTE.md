@@ -1,6 +1,6 @@
 # Compute, data and cost of the distillation runs
 
-This note answers four questions about each run in the README (BIRD first, then [FinQA](#finqa)): how many training FLOPs distillation and RL took, how much accelerator time, how much data, and what it cost. Every number below is produced by `distil/compute_report.py` from the run's raw logs (trainer statistics and timing files, generation logs with per-request token usage, serving benchmarks, the teacher keep-warm log and the Cloud Billing Catalog SKU pages).
+This note answers four questions about each run in the README (BIRD first, then [FinQA](#finqa) and [MATH](#math-gemma-4-e2b-self-distillation--grpo)): how many training FLOPs distillation and RL took, how much accelerator time, how much data, and what it cost. Every number below is produced by `distil/compute_report.py` from the run's raw logs (trainer statistics and timing files, generation logs with per-request token usage, serving benchmarks, the teacher keep-warm log and the Cloud Billing Catalog SKU pages).
 
 ## Answers
 
@@ -73,6 +73,71 @@ Per-run detail (generated):
 | bench_teacher_finqa | overhead | 3,342,413 | — | 287 | 8 H200 | 0.64 | — |
 | bench_rl_final_finqa | overhead | 6,545,753 | — | 307 | 1 v6e chip | 0.09 | — |
 | bench_base_finqa | overhead | 6,671,899 | — | 344 | 1 v6e chip | 0.10 | — |
+
+## MATH (Gemma 4 E2B, self-distillation + GRPO)
+
+The self-distillation recipe on MATH, from that run's raw logs with the same script and prices. The FLOP model reads the Gemma 4 architecture from `config.json`: head widths per layer type, no K/V projections in the 20 KV-shared layers, double-wide MLPs in those layers, the per-layer-input matmuls, and a 512-token sliding window in 28 of 35 layers. Per token, the forward pass costs 2 × (1.88 × 10⁹ decoder matmul parameters + 0.40 × 10⁹ LM-head parameters) plus attention.
+
+| Question | Recipe (student self-samples → self-distillation SFT → 6 GRPO iterations, truncated rollouts scored wrong) |
+|---|---|
+| **Training FLOPs** | **2.2 × 10¹⁸ model FLOPs** (2.8 × 10¹⁸ executed, including rematerialisation). SFT 0.17 × 10¹⁸ (8%); the six GRPO iterations 2.0 × 10¹⁸ (92%). Student generation (self-samples and rollouts) adds 1.6 × 10¹⁸ inference FLOPs. |
+| **Accelerator time** | **58.9 TPU v6e chip-hours**: self-samples 6.2, SFT 1.3, GRPO updates 17.4 (about 2.9 per iteration), GRPO rollouts 34.0 (about 6.2 per complete round). **No teacher time**: the recipe uses the teacher only for the gap screen and the evaluation, counted as overhead. |
+| **Data** | 6,262 MATH training problems. Student self-samples: 50,096 (8 per problem), of which 5,237 problems had a correct one; 4,992 kept for SFT (14.9M tokens processed over 3 epochs). RL: 6 rounds × 50,096 rollouts at up to 2,048 tokens (about 290M prompt and completion tokens in total), giving about 58,000 training sequences. The gold answers are used only to verify answers. |
+| **Cost** | **$159** at active-compute prices: TPU 58.9 chip-hours × $2.70. |
+
+MATH costs more than BIRD and FinQA, although its SFT set is the smallest, because the student's answers are long: about 1,000 tokens against 134 on FinQA, and about 17% of rollouts run to the 2,048-token limit. Rollouts are 58% of the recipe's chip-hours.
+
+Two log adjustments, both made by the manifest builder: the self-sample generation was resumed once (4 replicas, then 6) and its log is split at the resume; and in the second GRPO rollout round the TPU VM was unavailable for seven hours, so that round's log is cut at its last progress line without errors and the outage is not counted as compute.
+
+Experiment overhead on MATH: 95.3 TPU v6e chip-hours ($257: the KD arm's SFT, the two other GRPO runs and their rollouts) and 12.8 active teacher H200-hours ($58; teacher training samples for KD, the teacher's test evaluation, a serving benchmark). The teacher endpoint was up from 19:24 to 21:27 UTC for the MATH screen, evaluation and KD data (2.05 hours, 16.4 GPU-hours, $75); the deployment and undeployment operation timestamps give these times, because no keep-warm log ran.
+
+Per-run detail (generated):
+
+| Run | Role | Tokens processed | Model FLOPs | Wall (s) | Accelerators | Accelerator-hours | MFU |
+|---|---|---|---|---|---|---|---|
+| g4-self | recipe | 14,907,756 | 1.75e+17 | 577 | 8 v6e chip | 1.28 | 4.1% |
+| g4-kd | overhead | 10,747,131 | 1.25e+17 | 1103 | 8 v6e chip | 2.45 | 1.5% |
+| g4-self-rlt-it1 | recipe | 18,503,161 | 3.07e+17 | 1262 | 8 v6e chip | 2.80 | 3.3% |
+| g4-self-rlt-it2 | recipe | 8,924,242 | 1.91e+17 | 919 | 8 v6e chip | 2.04 | 2.8% |
+| g4-self-rlt-it3 | recipe | 18,121,491 | 3.87e+17 | 1450 | 8 v6e chip | 3.22 | 3.6% |
+| g4-self-rlt-it4 | recipe | 17,941,358 | 3.84e+17 | 1420 | 8 v6e chip | 3.16 | 3.7% |
+| g4-self-rlt-it5 | recipe | 17,416,044 | 3.72e+17 | 1383 | 8 v6e chip | 3.07 | 3.7% |
+| g4-self-rlt-it6 | recipe | 17,036,898 | 3.64e+17 | 1395 | 8 v6e chip | 3.10 | 3.6% |
+| g4-self-rl-it1 | overhead | 5,284,462 | 8.74e+16 | 536 | 8 v6e chip | 1.19 | 2.2% |
+| g4-self-rl-it2 | overhead | 5,242,917 | 1.12e+17 | 619 | 8 v6e chip | 1.38 | 2.5% |
+| g4-self-rl-it3 | overhead | 4,878,468 | 1.04e+17 | 585 | 8 v6e chip | 1.30 | 2.4% |
+| g4-self-rl-it4 | overhead | 4,949,968 | 1.05e+17 | 602 | 8 v6e chip | 1.34 | 2.4% |
+| g4-self-rl-it5 | overhead | 4,652,885 | 9.91e+16 | 554 | 8 v6e chip | 1.23 | 2.4% |
+| g4-self-rl-it6 | overhead | 4,426,398 | 9.43e+16 | 547 | 8 v6e chip | 1.22 | 2.3% |
+| g4-rl-it1 | overhead | 10,141,200 | 1.66e+17 | 1686 | 8 v6e chip | 3.75 | 1.3% |
+| g4-rl-it2 | overhead | 10,601,191 | 2.23e+17 | 1783 | 8 v6e chip | 3.96 | 1.7% |
+| g4-rl-it3 | overhead | 10,571,821 | 2.22e+17 | 1615 | 8 v6e chip | 3.59 | 1.9% |
+| g4-rl-it4 | overhead | 9,743,478 | 2.05e+17 | 1472 | 8 v6e chip | 3.27 | 1.9% |
+| g4-rl-it5 | overhead | 9,599,223 | 2.02e+17 | 1425 | 8 v6e chip | 3.17 | 1.9% |
+| g4-rl-it6 | overhead | 9,453,998 | 1.99e+17 | 1397 | 8 v6e chip | 3.10 | 1.9% |
+| self_samples_part1 | recipe | 0 | 0 | 2134 | 4 v6e chip | 2.37 | — |
+| self_samples_part2 | recipe | 53,306,239 | 2.53e+17 | 2276 | 6 v6e chip | 3.79 | — |
+| self_rlt_it1_rollouts | recipe | 52,990,982 | 2.51e+17 | 3210 | 7 v6e chip | 6.24 | — |
+| self_rlt_it2_rollouts | recipe | 27,856,296 | 1.32e+17 | 1655 | 7 v6e chip | 3.22 | — |
+| self_rlt_it3_rollouts | recipe | 52,692,661 | 2.5e+17 | 3187 | 7 v6e chip | 6.20 | — |
+| self_rlt_it4_rollouts | recipe | 52,435,224 | 2.48e+17 | 3176 | 7 v6e chip | 6.18 | — |
+| self_rlt_it5_rollouts | recipe | 52,043,763 | 2.46e+17 | 3147 | 7 v6e chip | 6.12 | — |
+| self_rlt_it6_rollouts | recipe | 51,727,918 | 2.45e+17 | 3130 | 7 v6e chip | 6.09 | — |
+| self_rl_it1_rollouts | overhead | 53,035,701 | 2.51e+17 | 3203 | 7 v6e chip | 6.23 | — |
+| self_rl_it2_rollouts | overhead | 53,010,850 | 2.51e+17 | 3202 | 7 v6e chip | 6.23 | — |
+| self_rl_it3_rollouts | overhead | 53,091,358 | 2.52e+17 | 3213 | 7 v6e chip | 6.25 | — |
+| self_rl_it4_rollouts | overhead | 52,968,545 | 2.51e+17 | 3201 | 7 v6e chip | 6.22 | — |
+| self_rl_it5_rollouts | overhead | 52,791,778 | 2.5e+17 | 3204 | 7 v6e chip | 6.23 | — |
+| self_rl_it6_rollouts | overhead | 52,766,469 | 2.5e+17 | 3191 | 7 v6e chip | 6.20 | — |
+| kd_rl_it1_rollouts | overhead | 36,128,282 | 1.69e+17 | 2245 | 7 v6e chip | 4.37 | — |
+| kd_rl_it2_rollouts | overhead | 36,613,869 | 1.72e+17 | 2271 | 7 v6e chip | 4.42 | — |
+| kd_rl_it3_rollouts | overhead | 37,117,216 | 1.74e+17 | 2323 | 7 v6e chip | 4.52 | — |
+| kd_rl_it4_rollouts | overhead | 37,739,931 | 1.77e+17 | 2351 | 7 v6e chip | 4.57 | — |
+| kd_rl_it5_rollouts | overhead | 37,661,091 | 1.77e+17 | 2352 | 7 v6e chip | 4.57 | — |
+| kd_rl_it6_rollouts | overhead | 37,671,625 | 1.77e+17 | 2330 | 7 v6e chip | 4.53 | — |
+| teacher_train_samples | overhead | 14,198,604 | — | 4159 | 8 H200 | 9.24 | — |
+| teacher_test_eval | overhead | 3,000,494 | — | 920 | 8 H200 | 2.04 | — |
+| bench_teacher_math | overhead | 1,448,894 | — | 672 | 8 H200 | 1.49 | — |
 
 ## What is counted
 

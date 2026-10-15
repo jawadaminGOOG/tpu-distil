@@ -25,6 +25,27 @@ def test_dims_and_flops():
   assert cr.update_flops(d, 10) == (2 * 448 + 3 * 128, 2 * 448 + 3 * 128 + 448 + 128)
 
 
+# Gemma 4 shape: h=4, 3 layers (sliding, full, sliding), ffn 8 (16 in the KV-shared last layer), 2 heads, head_dim 2
+# (global 4), 1 kv head, per-layer input 2, sliding window 3, rank 1. Worked by hand:
+#   layer 0 (sliding, own K/V): q 4x4, o 4x4, mlp 3x4x8, per-layer 2x4x2, k/v 2x4x2 -> 160; LoRA 8+8+12x3+(4+4) = 60
+#   layer 1 (full, own K/V):    q 4x8, o 8x4, mlp 96, per-layer 16, k/v 2x4x4    -> 208; LoRA 12+12+36+(4+8) = 72
+#   layer 2 (sliding, shared):  q 16, o 16, mlp 3x4x16, per-layer 16, no k/v      -> 240; LoRA 8+8+20x3     = 76
+#   per-layer model projection 4x3x2 = 24  =>  decoder 632, LoRA 208, LM head 40
+GEMMA = {"model_type": "gemma4", "tie_word_embeddings": True, "text_config": {
+    "model_type": "gemma4_text", "hidden_size": 4, "num_hidden_layers": 3, "intermediate_size": 8, "vocab_size": 10,
+    "num_attention_heads": 2, "head_dim": 2, "global_head_dim": 4, "num_key_value_heads": 1,
+    "hidden_size_per_layer_input": 2, "num_kv_shared_layers": 1, "use_double_wide_mlp": True,
+    "layer_types": ["sliding_attention", "full_attention", "sliding_attention"], "sliding_window": 3}}
+
+
+def test_gemma4_dims_and_flops():
+  d = cr.model_dims(GEMMA, 1)
+  assert d["decoder_matmul_params"] == 632 and d["lora_params"] == 208 and d["lm_head_params"] == 40
+  # attention at s = 10: sliding layers see min(5, 3) keys, the full layer 5: 4x4x3 + 4x8x5 + 4x4x3 = 256
+  assert cr.forward_flops(d, 10) == 2 * (632 + 40) + 256
+  assert cr.model_dims(CFG, 1)["decoder_matmul_params"] == 144  # the Qwen path is unchanged
+
+
 def test_manifest_end_to_end(tmp_path):
   w = lambda name, obj: (tmp_path / name).write_text(json.dumps(obj)) or name  # noqa: E731
   w("config.json", CFG)

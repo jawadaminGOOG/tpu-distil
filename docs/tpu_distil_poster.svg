@@ -9,24 +9,24 @@
 <text x="56.0" y="162.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="400" fill="#635a3a" text-anchor="start" >Text-to-SQL (BIRD dev, 1,534)  ·  financial QA (FinQA test, 1,147)  ·  competition math (MATH test, 5,000)  ·  same-run paired evaluation</text>
 <rect x="1368" y="40" width="232" height="140" rx="18" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
 <rect x="1388" y="40" width="192" height="7" rx="3.5" fill="#006eb8"/>
-<text x="1484.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="42" font-weight="400" fill="#111314" text-anchor="middle" >+22 / +28</text>
+<text x="1484.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="25" font-weight="400" fill="#111314" text-anchor="middle" >+22 / +28 / +3.5</text>
 <text x="1484.0" y="132.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#111314" text-anchor="middle" >points over base</text>
-<text x="1484.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >KD + GRPO · BIRD / FinQA</text>
+<text x="1484.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >BIRD / FinQA / MATH</text>
 <rect x="1616" y="40" width="232" height="140" rx="18" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
 <rect x="1636" y="40" width="192" height="7" rx="3.5" fill="#e31f26"/>
-<text x="1732.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="42" font-weight="400" fill="#111314" text-anchor="middle" >+3.5</text>
-<text x="1732.0" y="132.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#111314" text-anchor="middle" >points over base</text>
-<text x="1732.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >self-distil + GRPO · MATH</text>
+<text x="1732.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="25" font-weight="400" fill="#111314" text-anchor="middle" >+4.0 / +5.8 / +1.8</text>
+<text x="1732.0" y="132.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#111314" text-anchor="middle" >points from GRPO</text>
+<text x="1732.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >95% CIs above 0</text>
 <rect x="1864" y="40" width="232" height="140" rx="18" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
 <rect x="1884" y="40" width="192" height="7" rx="3.5" fill="#fcb315"/>
-<text x="1980.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="42" font-weight="400" fill="#111314" text-anchor="middle" >16–17×</text>
+<text x="1980.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="25" font-weight="400" fill="#111314" text-anchor="middle" >16–17× / 4.8×</text>
 <text x="1980.0" y="132.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#111314" text-anchor="middle" >cheaper per correct answer</text>
-<text x="1980.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >1 v6e chip vs 8× H200</text>
+<text x="1980.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >BIRD, FinQA / MATH</text>
 <rect x="2112" y="40" width="232" height="140" rx="18" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
 <rect x="2132" y="40" width="192" height="7" rx="3.5" fill="#489b6e"/>
-<text x="2228.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="34" font-weight="400" fill="#111314" text-anchor="middle" >$136 / $79</text>
+<text x="2228.0" y="100.0" font-family="Caprasimo, Georgia, serif" font-size="25" font-weight="400" fill="#111314" text-anchor="middle" >$136 / $79 / $159</text>
 <text x="2228.0" y="132.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="700" fill="#111314" text-anchor="middle" >to produce the student</text>
-<text x="2228.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >BIRD / FinQA, list prices</text>
+<text x="2228.0" y="156.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="middle" >list prices</text>
 <line x1="56.0" y1="206.0" x2="2344.0" y2="206.0" stroke="#ddd3bf" stroke-width="2"/>
 <rect x="56.0" y="222" width="446.4" height="54" rx="27" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
 <text x="80.0" y="258.0" font-family="Caprasimo, Georgia, serif" font-size="24" font-weight="400" fill="#006eb8" text-anchor="start" >±2</text>
@@ -44,59 +44,73 @@
 <text x="1921.6" y="258.0" font-family="Caprasimo, Georgia, serif" font-size="24" font-weight="400" fill="#006eb8" text-anchor="start" >1:1</text>
 <text x="1979.6" y="255.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >bit-identical retrain</text>
 <rect x="56" y="292" width="2288" height="264" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
-<text x="82.0" y="336.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >The KD recipe, end to end (BIRD run)</text>
-<rect x="82.0" y="358" width="391.2" height="174" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
-<circle cx="112.0" cy="390" r="17" fill="#006eb8"/>
-<text x="112.0" y="396.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#f6f1e6" text-anchor="middle" >1</text>
-<text x="140.0" y="397.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#111314" text-anchor="start" >Teacher answers</text>
-<text x="100.0" y="438.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#111314" text-anchor="start" >33,728</text>
-<text x="100.0" y="468.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >DeepSeek-V4.1-Flash on 8× H200</text>
-<text x="100.0" y="489.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >4 samples per BIRD question</text>
-<text x="100.0" y="510.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >non-thinking mode · 38 min</text>
-<path d="M481.2,445.0 H529.2" stroke="#635a3a" stroke-width="3"/>
-<path d="M529.2,437.0 L543.2,445.0 L529.2,453.0 Z" fill="#635a3a"/>
-<text x="508.2" y="431.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="middle" >check</text>
-<rect x="543.2" y="358" width="391.2" height="174" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
-<circle cx="573.2" cy="390" r="17" fill="#e31f26"/>
-<text x="573.2" y="396.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#f6f1e6" text-anchor="middle" >2</text>
-<text x="601.2" y="397.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#111314" text-anchor="start" >Verified data</text>
-<text x="561.2" y="438.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#111314" text-anchor="start" >10,112</text>
-<text x="561.2" y="468.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >only answers the task verifies</text>
-<text x="561.2" y="489.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >≤ 4 distinct per question</text>
-<text x="561.2" y="510.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >0 evaluation leaks (audited)</text>
-<path d="M942.4,445.0 H990.4" stroke="#635a3a" stroke-width="3"/>
-<path d="M990.4,437.0 L1004.4,445.0 L990.4,453.0 Z" fill="#635a3a"/>
-<text x="969.4" y="431.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="middle" >SFT</text>
-<rect x="1004.4" y="358" width="391.2" height="174" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
-<circle cx="1034.4" cy="390" r="17" fill="#fcb315"/>
-<text x="1034.4" y="396.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="middle" >3</text>
-<text x="1062.4" y="397.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#111314" text-anchor="start" >Distil (KD)</text>
-<text x="1022.4" y="438.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#111314" text-anchor="start" >27 min</text>
-<text x="1022.4" y="468.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Qwen3-1.7B on TPU v6e-8</text>
-<text x="1022.4" y="489.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >117 steps · batch 256 · LoRA r256</text>
-<text x="1022.4" y="510.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Tunix · qwix · Optax · JAX</text>
-<path d="M1403.6,445.0 H1451.6" stroke="#635a3a" stroke-width="3"/>
-<path d="M1451.6,437.0 L1465.6,445.0 L1451.6,453.0 Z" fill="#635a3a"/>
-<text x="1430.6" y="431.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="middle" >reward</text>
-<rect x="1465.6" y="358" width="391.2" height="174" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
-<circle cx="1495.6" cy="390" r="17" fill="#489b6e"/>
-<text x="1495.6" y="396.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="middle" >4</text>
-<text x="1523.6" y="397.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#111314" text-anchor="start" >Reinforce (GRPO)</text>
-<text x="1483.6" y="438.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#111314" text-anchor="start" >6 rounds</text>
-<text x="1483.6" y="468.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >8 samples per question at T = 1</text>
-<text x="1483.6" y="489.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >PPO clip 0.2 · KL to KD, beta 0.02</text>
-<text x="1483.6" y="510.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >~45 min per round on v6e-8</text>
-<path d="M1864.8,445.0 H1912.8" stroke="#635a3a" stroke-width="3"/>
-<path d="M1912.8,437.0 L1926.8,445.0 L1912.8,453.0 Z" fill="#635a3a"/>
-<text x="1891.8" y="431.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="middle" >merge</text>
-<rect x="1926.8" y="358" width="391.2" height="174" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
-<circle cx="1956.8" cy="390" r="17" fill="#006eb8"/>
-<text x="1956.8" y="396.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#f6f1e6" text-anchor="middle" >5</text>
-<text x="1984.8" y="397.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="20" font-weight="800" fill="#111314" text-anchor="start" >Serve</text>
-<text x="1944.8" y="438.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#111314" text-anchor="start" >15.8 req/s</text>
-<text x="1944.8" y="468.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >vLLM-TPU on one v6e chip</text>
-<text x="1944.8" y="489.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >$0.091 per 1,000 correct answers</text>
-<text x="1944.8" y="510.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >15.8× cheaper than the teacher</text>
+<text x="82.0" y="336.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >The two recipes, end to end</text>
+<rect x="526" y="322" width="16" height="16" rx="3" fill="#006eb8"/>
+<text x="550.0" y="335.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >KD + GRPO · BIRD, Qwen3-1.7B</text>
+<rect x="856" y="322" width="16" height="16" rx="3" fill="#e31f26"/>
+<text x="880.0" y="335.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >Self-distillation + GRPO · MATH, Gemma 4 E2B</text>
+<rect x="82.0" y="354" width="404.0" height="182" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
+<circle cx="110.0" cy="382" r="15" fill="#006eb8"/>
+<text x="110.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >1</text>
+<text x="134.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#111314" text-anchor="start" >Training answers</text>
+<rect x="98.0" y="410.0" width="5" height="46" rx="2.5" fill="#006eb8"/>
+<text x="112.0" y="431.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >33,728</text>
+<text x="112.0" y="451.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >teacher · 4 per question</text>
+<rect x="98.0" y="468.0" width="5" height="46" rx="2.5" fill="#e31f26"/>
+<text x="112.0" y="489.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >50,096</text>
+<text x="112.0" y="509.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >the student itself · 8 per problem</text>
+<path d="M492.0,445.0 H526.0" stroke="#635a3a" stroke-width="3"/>
+<path d="M526.0,438.0 L539.0,445.0 L526.0,452.0 Z" fill="#635a3a"/>
+<text x="512.0" y="433.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#635a3a" text-anchor="middle" >verify</text>
+<rect x="540.0" y="354" width="404.0" height="182" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
+<circle cx="568.0" cy="382" r="15" fill="#e31f26"/>
+<text x="568.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >2</text>
+<text x="592.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#111314" text-anchor="start" >Verified data</text>
+<rect x="556.0" y="410.0" width="5" height="46" rx="2.5" fill="#006eb8"/>
+<text x="570.0" y="431.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >10,112</text>
+<text x="570.0" y="451.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >≤ 4 distinct per question · audited</text>
+<rect x="556.0" y="468.0" width="5" height="46" rx="2.5" fill="#e31f26"/>
+<text x="570.0" y="489.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >4,992</text>
+<text x="570.0" y="509.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >one per problem · audited</text>
+<path d="M950.0,445.0 H984.0" stroke="#635a3a" stroke-width="3"/>
+<path d="M984.0,438.0 L997.0,445.0 L984.0,452.0 Z" fill="#635a3a"/>
+<text x="970.0" y="433.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#635a3a" text-anchor="middle" >SFT</text>
+<rect x="998.0" y="354" width="404.0" height="182" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
+<circle cx="1026.0" cy="382" r="15" fill="#fcb315"/>
+<text x="1026.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >3</text>
+<text x="1050.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#111314" text-anchor="start" >SFT, LoRA r256</text>
+<rect x="1014.0" y="410.0" width="5" height="46" rx="2.5" fill="#006eb8"/>
+<text x="1028.0" y="431.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >27 min</text>
+<text x="1028.0" y="451.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >117 steps on v6e-8</text>
+<rect x="1014.0" y="468.0" width="5" height="46" rx="2.5" fill="#e31f26"/>
+<text x="1028.0" y="489.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >10 min</text>
+<text x="1028.0" y="509.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >57 steps on v6e-8</text>
+<path d="M1408.0,445.0 H1442.0" stroke="#635a3a" stroke-width="3"/>
+<path d="M1442.0,438.0 L1455.0,445.0 L1442.0,452.0 Z" fill="#635a3a"/>
+<text x="1428.0" y="433.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#635a3a" text-anchor="middle" >reward</text>
+<rect x="1456.0" y="354" width="404.0" height="182" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
+<circle cx="1484.0" cy="382" r="15" fill="#489b6e"/>
+<text x="1484.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >4</text>
+<text x="1508.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#111314" text-anchor="start" >GRPO, 6 rounds</text>
+<rect x="1472.0" y="410.0" width="5" height="46" rx="2.5" fill="#006eb8"/>
+<text x="1486.0" y="431.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >+4.0 pts</text>
+<text x="1486.0" y="451.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >cut-off rollouts dropped</text>
+<rect x="1472.0" y="468.0" width="5" height="46" rx="2.5" fill="#e31f26"/>
+<text x="1486.0" y="489.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >+1.8 pts</text>
+<text x="1486.0" y="509.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >cut-off rollouts count as wrong</text>
+<path d="M1866.0,445.0 H1900.0" stroke="#635a3a" stroke-width="3"/>
+<path d="M1900.0,438.0 L1913.0,445.0 L1900.0,452.0 Z" fill="#635a3a"/>
+<text x="1886.0" y="433.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#635a3a" text-anchor="middle" >merge</text>
+<rect x="1914.0" y="354" width="404.0" height="182" rx="14" fill="#f6f1e6" stroke="#ddd3bf" stroke-width="2"/>
+<circle cx="1942.0" cy="382" r="15" fill="#006eb8"/>
+<text x="1942.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >5</text>
+<text x="1966.0" y="388.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="18" font-weight="800" fill="#111314" text-anchor="start" >Serve, 1 v6e chip</text>
+<rect x="1930.0" y="410.0" width="5" height="46" rx="2.5" fill="#006eb8"/>
+<text x="1944.0" y="431.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >15.8 req/s</text>
+<text x="1944.0" y="451.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >$0.091 per 1,000 correct · 15.8×</text>
+<rect x="1930.0" y="468.0" width="5" height="46" rx="2.5" fill="#e31f26"/>
+<text x="1944.0" y="489.0" font-family="Caprasimo, Georgia, serif" font-size="22" font-weight="400" fill="#111314" text-anchor="start" >2.8 req/s</text>
+<text x="1944.0" y="509.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >$0.343 per 1,000 correct · 4.8×</text>
 <rect x="56" y="572" width="760" height="440" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="82.0" y="616.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >Accuracy ladder</text>
 <text x="82.0" y="642.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >Final same-run evaluation per task · dashed line = teacher</text>
@@ -153,82 +167,87 @@
 <text x="676.0" y="998.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15.5" font-weight="800" fill="#111314" text-anchor="middle" >MATH competition math</text>
 <rect x="836" y="572" width="760" height="440" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="862.0" y="616.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >Better and cheaper</text>
-<text x="862.0" y="642.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >BIRD serving cost per 1,000 correct answers · accuracy under each name</text>
-<text x="862.0" y="689.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#111314" text-anchor="start" >Teacher</text>
-<text x="862.0" y="709.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >DeepSeek-V4.1-Flash, 8× H200 · 60.7%</text>
-<path d="M1106.0,676.0 H1482.0 Q1486.0,676.0 1486.0,680.0 V706.0 Q1486.0,710.0 1482.0,710.0 H1106.0 Z" fill="#111314"/>
-<text x="1496.0" y="699.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >$1.438</text>
-<text x="862.0" y="747.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#111314" text-anchor="start" >Base student</text>
-<text x="862.0" y="767.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >Qwen3-1.7B, 1 v6e chip · 30.6%</text>
-<path d="M1106.0,734.0 H1149.0 Q1153.0,734.0 1153.0,738.0 V764.0 Q1153.0,768.0 1149.0,768.0 H1106.0 Z" fill="#c19f2c"/>
-<text x="1163.0" y="757.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >$0.178</text>
-<text x="862.0" y="805.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#111314" text-anchor="start" >Distilled (KD)</text>
-<text x="862.0" y="825.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >1 v6e chip · 48.2%</text>
-<path d="M1106.0,792.0 H1127.4 Q1131.4,792.0 1131.4,796.0 V822.0 Q1131.4,826.0 1127.4,826.0 H1106.0 Z" fill="#006eb8"/>
-<text x="1141.4" y="815.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >$0.096</text>
-<text x="862.0" y="863.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#111314" text-anchor="start" >KD + GRPO</text>
-<text x="862.0" y="883.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >1 v6e chip · 52.2%</text>
-<path d="M1106.0,850.0 H1126.0 Q1130.0,850.0 1130.0,854.0 V880.0 Q1130.0,884.0 1126.0,884.0 H1106.0 Z" fill="#489b6e"/>
-<text x="1140.0" y="873.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >$0.091</text>
-<line x1="862.0" y1="910.0" x2="1570.0" y2="910.0" stroke="#ddd3bf" stroke-width="1.5"/>
-<text x="862.0" y="966.0" font-family="Caprasimo, Georgia, serif" font-size="50" font-weight="400" fill="#006eb8" text-anchor="start" >15.8×</text>
-<text x="1032.0" y="946.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#111314" text-anchor="start" >cheaper per correct answer than the teacher,</text>
-<text x="1032.0" y="968.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="400" fill="#635a3a" text-anchor="start" >and accuracy rises at every training stage</text>
+<text x="862.0" y="642.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >Serving cost per 1,000 correct answers · teacher (8× H200) vs final student (1 v6e chip)</text>
+<text x="862.0" y="700.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >BIRD</text>
+<text x="862.0" y="720.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="start" >Qwen3-1.7B</text>
+<path d="M986.0,674.0 H1329.3 Q1333.3,674.0 1333.3,678.0 V694.0 Q1333.3,698.0 1329.3,698.0 H986.0 Z" fill="#111314"/>
+<text x="1341.3" y="692.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$1.438 · 60.7%</text>
+<path d="M986.0,704.0 H1004.0 Q1008.0,704.0 1008.0,708.0 V724.0 Q1008.0,728.0 1004.0,728.0 H986.0 Z" fill="#489b6e"/>
+<text x="1016.0" y="722.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$0.091 · 52.2%</text>
+<text x="1570.0" y="712.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#006eb8" text-anchor="end" >15.8×</text>
+<text x="862.0" y="782.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >FinQA</text>
+<text x="862.0" y="802.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="start" >Qwen3-1.7B</text>
+<path d="M986.0,756.0 H1163.2 Q1167.2,756.0 1167.2,760.0 V776.0 Q1167.2,780.0 1163.2,780.0 H986.0 Z" fill="#111314"/>
+<text x="1175.2" y="774.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$0.750 · 75.7%</text>
+<path d="M986.0,786.0 H992.4 Q996.4,786.0 996.4,790.0 V806.0 Q996.4,810.0 992.4,810.0 H986.0 Z" fill="#489b6e"/>
+<text x="1004.4" y="804.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$0.043 · 72.5%</text>
+<text x="1570.0" y="794.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#006eb8" text-anchor="end" >17.5×</text>
+<text x="862.0" y="864.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >MATH</text>
+<text x="862.0" y="884.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#635a3a" text-anchor="start" >Gemma 4 E2B</text>
+<path d="M986.0,838.0 H1382.0 Q1386.0,838.0 1386.0,842.0 V858.0 Q1386.0,862.0 1382.0,862.0 H986.0 Z" fill="#111314"/>
+<text x="1394.0" y="856.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$1.656 · 92.5%</text>
+<path d="M986.0,868.0 H1064.9 Q1068.9,868.0 1068.9,872.0 V888.0 Q1068.9,892.0 1064.9,892.0 H986.0 Z" fill="#489b6e"/>
+<text x="1076.9" y="886.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >$0.343 · 78.4%</text>
+<text x="1570.0" y="876.0" font-family="Caprasimo, Georgia, serif" font-size="30" font-weight="400" fill="#006eb8" text-anchor="end" >4.8×</text>
+<rect x="862" y="922" width="15" height="15" rx="3" fill="#111314"/>
+<text x="884.0" y="934.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >teacher, DeepSeek-V4.1-Flash</text>
+<text x="1122.0" y="934.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >coloured: final student · large number: teacher ÷ student</text>
 <rect x="1616" y="572" width="728" height="440" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="1642.0" y="616.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >Where the gain comes from</text>
-<text x="1642.0" y="642.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >KD gain over base, split by the self-distillation control</text>
-<text x="1642.0" y="689.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >BIRD</text>
-<rect x="1726.0" y="664" width="110.6" height="36" fill="#e31f26"/>
-<path d="M1838.6,664.0 H2126.1 Q2130.1,664.0 2130.1,668.0 V696.0 Q2130.1,700.0 2126.1,700.0 H1838.6 Z" fill="#006eb8"/>
-<text x="1781.8" y="688.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+5.0</text>
-<text x="1983.8" y="688.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+13.1</text>
-<text x="2138.1" y="688.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >= +18.1</text>
-<text x="1642.0" y="737.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >FinQA</text>
-<rect x="1726.0" y="712" width="324.9" height="36" fill="#e31f26"/>
-<path d="M2052.9,712.0 H2262.2 Q2266.2,712.0 2266.2,716.0 V744.0 Q2266.2,748.0 2262.2,748.0 H2052.9 Z" fill="#006eb8"/>
-<text x="1889.0" y="736.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+14.6</text>
-<text x="2159.1" y="736.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+9.6</text>
-<text x="2274.2" y="736.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >= +24.1</text>
-<rect x="1642" y="764" width="16" height="16" rx="3" fill="#e31f26"/>
-<text x="1666.0" y="777.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >in-domain fine-tuning (self-distillation)</text>
-<rect x="1976" y="764" width="16" height="16" rx="3" fill="#006eb8"/>
-<text x="2000.0" y="777.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >added by the teacher's answers</text>
-<text x="1642.0" y="810.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >Paired differences, 95% CI (KD rows: control runs)</text>
-<line x1="1642.0" y1="816.0" x2="2318.0" y2="816.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="834.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >BIRD</text>
-<text x="1726.0" y="834.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >distilled vs self-distilled</text>
-<text x="2164.0" y="834.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+13.1</text>
-<text x="2318.0" y="834.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+10.7, +15.5]</text>
-<line x1="1642.0" y1="840.0" x2="2318.0" y2="840.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="858.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >BIRD</text>
-<text x="1726.0" y="858.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >KD + GRPO vs distilled</text>
-<text x="2164.0" y="858.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+4.0</text>
-<text x="2318.0" y="858.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+2.2, +5.9]</text>
-<line x1="1642.0" y1="864.0" x2="2318.0" y2="864.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="882.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >FinQA</text>
-<text x="1726.0" y="882.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >distilled vs self-distilled</text>
-<text x="2164.0" y="882.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+9.6</text>
-<text x="2318.0" y="882.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+6.9, +12.4]</text>
-<line x1="1642.0" y1="888.0" x2="2318.0" y2="888.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="906.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >FinQA</text>
-<text x="1726.0" y="906.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >KD + GRPO vs distilled</text>
-<text x="2164.0" y="906.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+5.8</text>
-<text x="2318.0" y="906.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+3.9, +7.8]</text>
-<line x1="1642.0" y1="912.0" x2="2318.0" y2="912.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="930.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >MATH</text>
-<text x="1726.0" y="930.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >distilled vs self-distilled</text>
-<text x="2164.0" y="930.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >-4.3</text>
-<text x="2318.0" y="930.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[-5.4, -3.2]</text>
-<line x1="1642.0" y1="936.0" x2="2318.0" y2="936.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="954.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >MATH</text>
-<text x="1726.0" y="954.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >self + GRPO vs self-distilled</text>
-<text x="2164.0" y="954.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+1.8</text>
-<text x="2318.0" y="954.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+1.0, +2.7]</text>
-<line x1="1642.0" y1="960.0" x2="2318.0" y2="960.0" stroke="#ddd3bf" stroke-width="1"/>
-<text x="1642.0" y="978.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >MATH</text>
-<text x="1726.0" y="978.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >self + GRPO vs base</text>
-<text x="2164.0" y="978.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="end" >+3.5</text>
-<text x="2318.0" y="978.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="end" >[+2.6, +4.4]</text>
+<text x="1642.0" y="642.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >Points over base by stage, final same-run evaluation per task</text>
+<text x="1642.0" y="688.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >BIRD</text>
+<rect x="1726.0" y="664" width="307.6" height="34" fill="#006eb8"/>
+<path d="M2035.6,664.0 H2100.8 Q2104.8,664.0 2104.8,668.0 V694.0 Q2104.8,698.0 2100.8,698.0 H2035.6 Z" fill="#489b6e"/>
+<text x="1880.3" y="687.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+17.6</text>
+<text x="2069.7" y="687.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >+4.0</text>
+<text x="2112.8" y="687.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >= +21.6</text>
+<text x="1642.0" y="734.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >FinQA</text>
+<rect x="1726.0" y="710" width="395.3" height="34" fill="#006eb8"/>
+<path d="M2123.3,710.0 H2220.0 Q2224.0,710.0 2224.0,714.0 V740.0 Q2224.0,744.0 2220.0,744.0 H2123.3 Z" fill="#489b6e"/>
+<text x="1924.1" y="733.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >+22.6</text>
+<text x="2173.1" y="733.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >+5.8</text>
+<text x="2232.0" y="733.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >= +28.4</text>
+<text x="1642.0" y="780.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >MATH</text>
+<rect x="1726.0" y="756" width="28.8" height="34" fill="#e31f26"/>
+<path d="M1756.8,756.0 H1783.4 Q1787.4,756.0 1787.4,760.0 V786.0 Q1787.4,790.0 1783.4,790.0 H1756.8 Z" fill="#489b6e"/>
+<text x="1795.4" y="779.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#111314" text-anchor="start" >+1.7 + 1.8 = +3.5</text>
+<rect x="1642" y="804" width="15" height="15" rx="3" fill="#006eb8"/>
+<text x="1664.0" y="816.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >SFT on teacher answers</text>
+<rect x="1862" y="804" width="15" height="15" rx="3" fill="#e31f26"/>
+<text x="1884.0" y="816.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >SFT on own answers</text>
+<rect x="2082" y="804" width="15" height="15" rx="3" fill="#489b6e"/>
+<text x="2104.0" y="816.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO</text>
+<text x="1642.0" y="846.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#111314" text-anchor="start" >Controls and paired differences, 95% CI</text>
+<line x1="1642.0" y1="853.0" x2="2318.0" y2="853.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="870.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >BIRD</text>
+<text x="1716.0" y="870.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >KD vs self-distillation</text>
+<text x="2174.0" y="870.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >+13.1</text>
+<text x="2318.0" y="870.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[+10.7, +15.5]</text>
+<line x1="1642.0" y1="877.0" x2="2318.0" y2="877.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="894.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >FinQA</text>
+<text x="1716.0" y="894.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >KD vs self-distillation</text>
+<text x="2174.0" y="894.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >+9.6</text>
+<text x="2318.0" y="894.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[+6.9, +12.4]</text>
+<line x1="1642.0" y1="901.0" x2="2318.0" y2="901.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="918.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >MATH</text>
+<text x="1716.0" y="918.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >KD vs self-distillation</text>
+<text x="2174.0" y="918.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >-4.3</text>
+<text x="2318.0" y="918.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[-5.4, -3.2]</text>
+<line x1="1642.0" y1="925.0" x2="2318.0" y2="925.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="942.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >BIRD</text>
+<text x="1716.0" y="942.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO vs its SFT student</text>
+<text x="2174.0" y="942.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >+4.0</text>
+<text x="2318.0" y="942.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[+2.2, +5.9]</text>
+<line x1="1642.0" y1="949.0" x2="2318.0" y2="949.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="966.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >FinQA</text>
+<text x="1716.0" y="966.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO vs its SFT student</text>
+<text x="2174.0" y="966.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >+5.8</text>
+<text x="2318.0" y="966.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[+3.9, +7.8]</text>
+<line x1="1642.0" y1="973.0" x2="2318.0" y2="973.0" stroke="#ddd3bf" stroke-width="1"/>
+<text x="1642.0" y="990.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="start" >MATH</text>
+<text x="1716.0" y="990.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO vs its SFT student</text>
+<text x="2174.0" y="990.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="800" fill="#111314" text-anchor="end" >+1.8</text>
+<text x="2318.0" y="990.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="end" >[+1.0, +2.7]</text>
 <rect x="56" y="1028" width="760" height="416" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="82.0" y="1072.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >Two recipes</text>
 <text x="82.0" y="1098.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >The self-distillation control decides which one a student needs</text>
@@ -248,57 +267,76 @@
 <text x="104.0" y="1414.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO that scores cut-off answers as wrong: +1.8</text>
 <rect x="836" y="1028" width="760" height="416" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="862.0" y="1072.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >What it took</text>
-<text x="862.0" y="1098.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >BIRD recipe: accelerator-hours by stage</text>
-<rect x="862.0" y="1126" width="58.8" height="40" rx="4" fill="#006eb8"/>
-<text x="892.4" y="1152.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#f6f1e6" text-anchor="middle" >3.6</text>
-<rect x="862" y="1186" width="14" height="14" rx="3" fill="#006eb8"/>
-<text x="884.0" y="1198.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >KD fine-tuning (v6e chip-hours)</text>
-<rect x="922.8" y="1126" width="434.0" height="40" rx="4" fill="#489b6e"/>
-<text x="1140.8" y="1152.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >25.8</text>
-<rect x="862" y="1212" width="14" height="14" rx="3" fill="#489b6e"/>
-<text x="884.0" y="1224.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO updates (v6e chip-hours)</text>
-<rect x="1358.8" y="1126" width="209.2" height="40" rx="4" fill="#c19f2c"/>
-<text x="1464.4" y="1152.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#111314" text-anchor="middle" >12.5</text>
-<rect x="862" y="1238" width="14" height="14" rx="3" fill="#c19f2c"/>
-<text x="884.0" y="1250.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO rollouts (v6e chip-hours)</text>
-<text x="862.0" y="1328.0" font-family="Caprasimo, Georgia, serif" font-size="32" font-weight="400" fill="#111314" text-anchor="start" >4.2e18</text>
-<text x="862.0" y="1352.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >training FLOPs</text>
-<text x="1216.0" y="1328.0" font-family="Caprasimo, Georgia, serif" font-size="32" font-weight="400" fill="#111314" text-anchor="start" >41.9</text>
-<text x="1216.0" y="1352.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >v6e chip-hours</text>
-<text x="862.0" y="1402.0" font-family="Caprasimo, Georgia, serif" font-size="32" font-weight="400" fill="#111314" text-anchor="start" >5.1</text>
-<text x="862.0" y="1426.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >teacher H200-hours</text>
-<text x="1216.0" y="1402.0" font-family="Caprasimo, Georgia, serif" font-size="32" font-weight="400" fill="#111314" text-anchor="start" >$136</text>
-<text x="1216.0" y="1426.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >at list prices</text>
+<text x="862.0" y="1098.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#635a3a" text-anchor="start" >TPU v6e chip-hours to produce each final student, by stage</text>
+<text x="862.0" y="1148.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >BIRD</text>
+<rect x="946.0" y="1124" width="36.1" height="34" rx="3" fill="#006eb8"/>
+<rect x="984.1" y="1124" width="271.3" height="34" rx="3" fill="#489b6e"/>
+<text x="1120.8" y="1147.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >25.8</text>
+<rect x="1257.5" y="1124" width="130.4" height="34" rx="3" fill="#c19f2c"/>
+<text x="1323.7" y="1147.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >12.5</text>
+<text x="946.0" y="1178.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >41.9 chip-h · $136 · 4.2e18 training FLOPs · teacher 5.1 H200-h</text>
+<text x="862.0" y="1230.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >FinQA</text>
+<rect x="946.0" y="1206" width="16.0" height="34" rx="3" fill="#006eb8"/>
+<rect x="964.0" y="1206" width="170.7" height="34" rx="3" fill="#489b6e"/>
+<text x="1050.4" y="1229.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >16.3</text>
+<rect x="1136.7" y="1206" width="52.0" height="34" rx="3" fill="#c19f2c"/>
+<text x="1163.7" y="1229.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >5.1</text>
+<text x="946.0" y="1260.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >23.1 chip-h · $79 · 2.0e18 training FLOPs · teacher 3.5 H200-h</text>
+<text x="862.0" y="1312.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="17" font-weight="800" fill="#111314" text-anchor="start" >MATH</text>
+<rect x="946.0" y="1288" width="63.7" height="34" rx="3" fill="#e31f26"/>
+<text x="978.8" y="1311.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#f6f1e6" text-anchor="middle" >6.2</text>
+<rect x="1011.7" y="1288" width="11.8" height="34" rx="3" fill="#006eb8"/>
+<rect x="1025.5" y="1288" width="182.3" height="34" rx="3" fill="#489b6e"/>
+<text x="1117.6" y="1311.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >17.4</text>
+<rect x="1209.8" y="1288" width="358.2" height="34" rx="3" fill="#c19f2c"/>
+<text x="1389.9" y="1311.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="800" fill="#111314" text-anchor="middle" >34.0</text>
+<text x="946.0" y="1342.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >58.9 chip-h · $159 · 2.2e18 training FLOPs · no teacher in the recipe</text>
+<rect x="862" y="1372" width="15" height="15" rx="3" fill="#e31f26"/>
+<text x="884.0" y="1384.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >student samples</text>
+<rect x="1042" y="1372" width="15" height="15" rx="3" fill="#006eb8"/>
+<text x="1064.0" y="1384.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >SFT</text>
+<rect x="1222" y="1372" width="15" height="15" rx="3" fill="#489b6e"/>
+<text x="1244.0" y="1384.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO updates</text>
+<rect x="1402" y="1372" width="15" height="15" rx="3" fill="#c19f2c"/>
+<text x="1424.0" y="1384.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO rollouts</text>
 <rect x="1616" y="1028" width="728" height="416" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="1642.0" y="1072.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >Recipe card</text>
-<line x1="1642.0" y1="1120.0" x2="2318.0" y2="1120.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1110.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Students</text>
-<text x="2318.0" y="1110.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >Qwen3-1.7B · Gemma 4 E2B, non-thinking</text>
+<text x="2088.0" y="1072.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#006eb8" text-anchor="end" >KD + GRPO</text>
+<text x="2318.0" y="1072.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="15" font-weight="800" fill="#e31f26" text-anchor="end" >Self-distil + GRPO</text>
+<line x1="1642.0" y1="1122.0" x2="2318.0" y2="1122.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1112.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Student</text>
+<text x="2088.0" y="1112.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >Qwen3-1.7B</text>
+<text x="2318.0" y="1112.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >Gemma 4 E2B</text>
 <line x1="1642.0" y1="1153.0" x2="2318.0" y2="1153.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1143.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Teacher</text>
-<text x="2318.0" y="1143.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >DeepSeek-V4.1-Flash</text>
-<line x1="1642.0" y1="1186.0" x2="2318.0" y2="1186.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1176.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Adapter</text>
-<text x="2318.0" y="1176.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >LoRA r256 · alpha 512 · attention + MLP</text>
-<line x1="1642.0" y1="1219.0" x2="2318.0" y2="1219.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1209.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >SFT</text>
-<text x="2318.0" y="1209.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >lr 1e-4 · batch 256 · 3 epochs</text>
-<line x1="1642.0" y1="1252.0" x2="2318.0" y2="1252.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1242.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Strong student</text>
-<text x="2318.0" y="1242.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >own verified answers · cut-off = wrong</text>
-<line x1="1642.0" y1="1285.0" x2="2318.0" y2="1285.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1275.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO</text>
-<text x="2318.0" y="1275.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >G = 8 · clip 0.2 · beta 0.02</text>
-<line x1="1642.0" y1="1318.0" x2="2318.0" y2="1318.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1308.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO lr</text>
-<text x="2318.0" y="1308.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >2e-6, then 5e-6 · ≤ 256 steps/round</text>
-<line x1="1642.0" y1="1351.0" x2="2318.0" y2="1351.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1341.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Mesh</text>
-<text x="2318.0" y="1341.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >FSDP 8 × TP 1 on v6e-8</text>
-<line x1="1642.0" y1="1384.0" x2="2318.0" y2="1384.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1374.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Serving</text>
-<text x="2318.0" y="1374.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >vLLM-TPU · TP 1 · bf16 KV</text>
-<line x1="1642.0" y1="1417.0" x2="2318.0" y2="1417.0" stroke="#d3c8b2" stroke-width="1"/>
-<text x="1642.0" y="1407.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >Stack</text>
-<text x="2318.0" y="1407.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="end" >Tunix · qwix · Flax · Optax · JAX</text>
+<text x="1642.0" y="1143.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >When</text>
+<text x="2088.0" y="1143.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >weak in the domain</text>
+<text x="2318.0" y="1143.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >already strong</text>
+<line x1="1642.0" y1="1184.0" x2="2318.0" y2="1184.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1174.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >SFT data</text>
+<text x="2088.0" y="1174.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >teacher answers</text>
+<text x="2318.0" y="1174.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >its own answers</text>
+<line x1="1642.0" y1="1215.0" x2="2318.0" y2="1215.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1205.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Samples per question</text>
+<text x="2088.0" y="1205.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >4 at T 0.7</text>
+<text x="2318.0" y="1205.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >8 at T 0.7</text>
+<line x1="1642.0" y1="1246.0" x2="2318.0" y2="1246.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1236.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Cut-off GRPO rollouts</text>
+<text x="2088.0" y="1236.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >dropped</text>
+<text x="2318.0" y="1236.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >reward 0</text>
+<line x1="1642.0" y1="1277.0" x2="2318.0" y2="1277.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1267.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Teacher used for</text>
+<text x="2088.0" y="1267.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >training data</text>
+<text x="2318.0" y="1267.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >gap screen only</text>
+<line x1="1642.0" y1="1308.0" x2="2318.0" y2="1308.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1298.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Adapter</text>
+<text x="2318.0" y="1298.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >LoRA r256 · alpha 512 · attention + MLP</text>
+<line x1="1642.0" y1="1339.0" x2="2318.0" y2="1339.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1329.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >SFT</text>
+<text x="2318.0" y="1329.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >lr 1e-4 · batch 256 · 3 epochs</text>
+<line x1="1642.0" y1="1370.0" x2="2318.0" y2="1370.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1360.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO</text>
+<text x="2318.0" y="1360.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >G 8 · clip 0.2 · beta 0.02 · 6 rounds</text>
+<line x1="1642.0" y1="1401.0" x2="2318.0" y2="1401.0" stroke="#d3c8b2" stroke-width="1"/>
+<text x="1642.0" y="1391.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#635a3a" text-anchor="start" >Serving</text>
+<text x="2318.0" y="1391.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#111314" text-anchor="end" >vLLM-TPU · one v6e chip · TP 1</text>
 </svg>

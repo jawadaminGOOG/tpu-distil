@@ -24,9 +24,9 @@ Teacher DeepSeek-V4.1-Flash (non-thinking mode, Vertex AI endpoint on 8×H200). 
 |---|---|---|---|---|---|---|---|
 | BIRD text-to-SQL (dev, 1,534 questions) | Qwen3-1.7B | KD + GRPO | 30.6% | **52.2%** | 60.7% | +21.6 [+19.2, +24.1] | **15.8×** |
 | FinQA financial question answering (test, 1,147 questions) | Qwen3-1.7B | KD + GRPO | 44.0% | **72.5%** | 75.7% | +28.4 [+25.5, +31.5] | **17.5×** |
-| MATH competition mathematics (test, 5,000 problems) | Gemma 4 E2B | Self-distillation + GRPO | 74.9% | **78.4%** | 92.5% | +3.5 [+2.6, +4.4] | **MATH_RATIO** |
+| MATH competition mathematics (test, 5,000 problems) | Gemma 4 E2B | Self-distillation + GRPO | 74.9% | **78.4%** | 92.5% | +3.5 [+2.6, +4.4] | **4.8×** |
 
-Each row comes from one same-run evaluation of the student arms. On BIRD and FinQA the final student closes 72% and 90% of the teacher–base gap; on MATH it closes 20%. Producing the BIRD and FinQA students cost $136 and $79 of accelerator time at list prices ([`docs/COMPUTE.md`](docs/COMPUTE.md)).
+Each row comes from one same-run evaluation of the student arms. On BIRD and FinQA the final student closes 72% and 90% of the teacher–base gap; on MATH it closes 20%. Producing the BIRD, FinQA and MATH students cost $136, $79 and $159 of accelerator time at list prices; the MATH recipe needs no teacher time, and its cost is mostly GRPO rollouts of long answers ([`docs/COMPUTE.md`](docs/COMPUTE.md)).
 
 ## BIRD text-to-SQL
 
@@ -132,7 +132,13 @@ The two GRPO variants differ by +0.98 [+0.16, +1.78]; the final student is +3.48
 
 **The KD route does not catch up.** GRPO on the KD student (same recipe, truncated rollouts dropped) adds +1.82 [+0.80, +2.86] over KD and ends level with base (−0.44 [−1.52, +0.66]). In a separate same-run evaluation, self-distillation + GRPO beats KD + GRPO by +2.82 [+1.78, +3.88].
 
-MATH_SERVING_TABLE
+| Serving (MATH test prompts, 2,048-token limit; best error-free rate over a concurrency ladder) | $/hour | Requests/s | $ per 1,000 correct answers |
+|---|---|---|---|
+| Self-distillation + GRPO student, 1× TPU v6e chip | 2.70 (on-demand) | 2.79 | 0.343 |
+| Base student, 1× TPU v6e chip | 2.70 (on-demand) | 2.71 | 0.369 |
+| Teacher, 8× H200 | 36.60 (GPU-only, cheapest listed rate) | 6.64 | 1.656 |
+
+The final MATH student costs **4.8× less per correct answer** than the teacher: 13.6× from hardware price, 0.42× from throughput and 0.85× from accuracy. The margin is much smaller than on BIRD and FinQA because the student's answers are long (about 980 tokens per request against the teacher's 420), so one v6e chip completes fewer requests per second than the teacher's eight H200s. These benchmarks use the evaluation's 2,048-token limit: at the 1,024-token limit used for BIRD and FinQA, 36% of the student's MATH answers would have been cut short (on BIRD, 17 of 1,024 were).
 
 ### What this does not show
 - One student, one teacher, and one training seed per arm. The noise floor measures serving non-determinism (two replicas of the same weights), not training-seed variance.
@@ -140,7 +146,7 @@ MATH_SERVING_TABLE
 - On BIRD, the RL gain is significant on dev (11 databases, 1,534 questions) but not detectable on the 522 held-out train-database questions. The decision to run four more BIRD RL iterations was taken after seeing the first RL result on dev; to limit tuning on the test set, dev was then used exactly once more, on an iterate fixed in advance, and early stopping used the held-out questions only. FinQA then ran the same six-iteration schedule unchanged, with its last iterate fixed in advance and its test set used once for RL.
 - The FinQA prompt was revised once before any teacher output or training. The first version offered "Answer: yes / no" on every question; reading the base student's test answers showed it answered yes or no on 363 numeric test questions. The replacement prompt was then chosen on dev, and every reported FinQA result uses it.
 - FinQA grading accepts a 1% relative error and the ×100 and ÷100 percentage forms, which is more lenient than the official FinQA execution-accuracy metric; the scores here are not comparable to published FinQA results. Answers shuffled between questions score 0.6% under this grader.
-- **The efficiency margin depends on the teacher deployment.** With the pricing above, the BIRD ratio drops to 10× if the teacher served 1.6× faster, and to parity at 15.8× faster (FinQA: 1.75× and 17.5×).
+- **The efficiency margin depends on the teacher deployment and on answer length.** With the pricing above, the BIRD ratio drops to 10× if the teacher served 1.6× faster, and to parity at 15.8× faster (FinQA: 1.75× and 17.5×; MATH: parity at 4.8× faster). Long student answers cost throughput: on MATH the margin is 4.8×.
 - The teacher's accuracy was measured in an earlier run than the student arms, with a 4,096-token output limit vs 2,048 for the students. Only 5 of its 1,534 BIRD answers and 7 of its 1,147 FinQA answers exceeded 2,048 tokens, so this moves its scores by at most 0.3 and 0.6 points.
 - Qwen3-4B-Instruct-2507 already matches the teacher on BIRD (61.7%) without any training; its serving cost was not measured. Picking the right student can matter as much as distilling it. The 1.7B was chosen because it had the largest gap.
 - BIRD and FinQA are public, so the teacher and the base student may have seen the evaluation questions in pre-training. This applies to every arm; no evaluation question, database or report page was used in training. MATH is public too, and Gemma 4 was trained on large amounts of mathematics.

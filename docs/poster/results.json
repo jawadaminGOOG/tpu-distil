@@ -4,24 +4,24 @@
  "setup": "Text-to-SQL (BIRD dev, 1,534)  ·  financial QA (FinQA test, 1,147)  ·  competition math (MATH test, 5,000)  ·  same-run paired evaluation",
  "kpis": [
   [
-   "+22 / +28",
+   "+22 / +28 / +3.5",
    "points over base",
-   "KD + GRPO · BIRD / FinQA"
+   "BIRD / FinQA / MATH"
   ],
   [
-   "+3.5",
-   "points over base",
-   "self-distil + GRPO · MATH"
+   "+4.0 / +5.8 / +1.8",
+   "points from GRPO",
+   "95% CIs above 0"
   ],
   [
-   "16–17×",
+   "16–17× / 4.8×",
    "cheaper per correct answer",
-   "1 v6e chip vs 8× H200"
+   "BIRD, FinQA / MATH"
   ],
   [
-   "$136 / $79",
+   "$136 / $79 / $159",
    "to produce the student",
-   "BIRD / FinQA, list prices"
+   "list prices"
   ]
  ],
  "trust": [
@@ -48,64 +48,69 @@
  ],
  "pipeline": [
   {
-   "name": "Teacher answers",
-   "big": "33,728",
-   "lines": [
-    "DeepSeek-V4.1-Flash on 8× H200",
-    "4 samples per BIRD question",
-    "non-thinking mode · 38 min"
-   ],
-   "arrow": "check"
+   "name": "Training answers",
+   "arrow": "verify",
+   "kd": {
+    "big": "33,728",
+    "line": "teacher · 4 per question"
+   },
+   "self": {
+    "big": "50,096",
+    "line": "the student itself · 8 per problem"
+   }
   },
   {
    "name": "Verified data",
-   "big": "10,112",
-   "lines": [
-    "only answers the task verifies",
-    "≤ 4 distinct per question",
-    "0 evaluation leaks (audited)"
-   ],
-   "arrow": "SFT"
+   "arrow": "SFT",
+   "kd": {
+    "big": "10,112",
+    "line": "≤ 4 distinct per question · audited"
+   },
+   "self": {
+    "big": "4,992",
+    "line": "one per problem · audited"
+   }
   },
   {
-   "name": "Distil (KD)",
-   "big": "27 min",
-   "lines": [
-    "Qwen3-1.7B on TPU v6e-8",
-    "117 steps · batch 256 · LoRA r256",
-    "Tunix · qwix · Optax · JAX"
-   ],
-   "arrow": "reward"
+   "name": "SFT, LoRA r256",
+   "arrow": "reward",
+   "kd": {
+    "big": "27 min",
+    "line": "117 steps on v6e-8"
+   },
+   "self": {
+    "big": "10 min",
+    "line": "57 steps on v6e-8"
+   }
   },
   {
-   "name": "Reinforce (GRPO)",
-   "big": "6 rounds",
-   "lines": [
-    "8 samples per question at T = 1",
-    "PPO clip 0.2 · KL to KD, beta 0.02",
-    "~45 min per round on v6e-8"
-   ],
-   "arrow": "merge"
+   "name": "GRPO, 6 rounds",
+   "arrow": "merge",
+   "kd": {
+    "big": "+4.0 pts",
+    "line": "cut-off rollouts dropped"
+   },
+   "self": {
+    "big": "+1.8 pts",
+    "line": "cut-off rollouts count as wrong"
+   }
   },
   {
-   "name": "Serve",
-   "big": "15.8 req/s",
-   "lines": [
-    "vLLM-TPU on one v6e chip",
-    "$0.091 per 1,000 correct answers",
-    "15.8× cheaper than the teacher"
-   ]
+   "name": "Serve, 1 v6e chip",
+   "kd": {
+    "big": "15.8 req/s",
+    "line": "$0.091 per 1,000 correct · 15.8×"
+   },
+   "self": {
+    "big": "2.8 req/s",
+    "line": "$0.343 per 1,000 correct · 4.8×"
+   }
   }
  ],
  "tasks": [
   {
    "label": "BIRD text-to-SQL",
    "teacher": 60.7,
-   "decomp": {
-    "self": 5.0,
-    "teacher": 13.1,
-    "total": 18.1
-   },
    "short": "BIRD",
    "arms": [
     [
@@ -128,11 +133,6 @@
   {
    "label": "FinQA financial QA",
    "teacher": 75.7,
-   "decomp": {
-    "self": 14.6,
-    "teacher": 9.6,
-    "total": 24.1
-   },
    "short": "FinQA",
    "arms": [
     [
@@ -175,117 +175,114 @@
    ]
   }
  ],
- "cost_ratio": 15.8,
- "compute": {
-  "stages": [
+ "recipe_card": {
+  "columns": [
    [
-    "KD fine-tuning",
-    3.6
+    "KD + GRPO",
+    "kd"
    ],
    [
-    "GRPO updates",
-    25.8
-   ],
-   [
-    "GRPO rollouts",
-    12.5
+    "Self-distil + GRPO",
+    "self"
    ]
   ],
-  "tiles": [
+  "rows": [
    [
-    "4.2e18",
-    "training FLOPs"
+    "Student",
+    "Qwen3-1.7B",
+    "Gemma 4 E2B"
    ],
    [
-    "41.9",
-    "v6e chip-hours"
+    "When",
+    "weak in the domain",
+    "already strong"
    ],
    [
-    "5.1",
-    "teacher H200-hours"
+    "SFT data",
+    "teacher answers",
+    "its own answers"
    ],
    [
-    "$136",
-    "at list prices"
+    "Samples per question",
+    "4 at T 0.7",
+    "8 at T 0.7"
+   ],
+   [
+    "Cut-off GRPO rollouts",
+    "dropped",
+    "reward 0"
+   ],
+   [
+    "Teacher used for",
+    "training data",
+    "gap screen only"
+   ],
+   [
+    "Adapter",
+    "LoRA r256 · alpha 512 · attention + MLP"
+   ],
+   [
+    "SFT",
+    "lr 1e-4 · batch 256 · 3 epochs"
+   ],
+   [
+    "GRPO",
+    "G 8 · clip 0.2 · beta 0.02 · 6 rounds"
+   ],
+   [
+    "Serving",
+    "vLLM-TPU · one v6e chip · TP 1"
    ]
   ]
  },
- "recipe_card": [
-  [
-   "Students",
-   "Qwen3-1.7B · Gemma 4 E2B, non-thinking"
-  ],
-  [
-   "Teacher",
-   "DeepSeek-V4.1-Flash"
-  ],
-  [
-   "Adapter",
-   "LoRA r256 · alpha 512 · attention + MLP"
-  ],
-  [
-   "SFT",
-   "lr 1e-4 · batch 256 · 3 epochs"
-  ],
-  [
-   "Strong student",
-   "own verified answers · cut-off = wrong"
-  ],
-  [
-   "GRPO",
-   "G = 8 · clip 0.2 · beta 0.02"
-  ],
-  [
-   "GRPO lr",
-   "2e-6, then 5e-6 · ≤ 256 steps/round"
-  ],
-  [
-   "Mesh",
-   "FSDP 8 × TP 1 on v6e-8"
-  ],
-  [
-   "Serving",
-   "vLLM-TPU · TP 1 · bf16 KV"
-  ],
-  [
-   "Stack",
-   "Tunix · qwix · Flax · Optax · JAX"
-  ]
- ],
  "cost": [
   {
-   "k": "teacher",
-   "label": "Teacher",
-   "hw": "DeepSeek-V4.1-Flash, 8× H200",
-   "acc": 60.7,
-   "cost": 1.438
+   "short": "BIRD",
+   "student": "Qwen3-1.7B",
+   "arm": "rl",
+   "teacher": {
+    "cost": 1.438,
+    "acc": 60.7
+   },
+   "final": {
+    "cost": 0.091,
+    "acc": 52.2
+   },
+   "ratio": 15.8
   },
   {
-   "k": "base",
-   "label": "Base student",
-   "hw": "Qwen3-1.7B, 1 v6e chip",
-   "acc": 30.6,
-   "cost": 0.178
+   "short": "FinQA",
+   "student": "Qwen3-1.7B",
+   "arm": "rl",
+   "teacher": {
+    "cost": 0.75,
+    "acc": 75.7
+   },
+   "final": {
+    "cost": 0.043,
+    "acc": 72.5
+   },
+   "ratio": 17.5
   },
   {
-   "k": "kd",
-   "label": "Distilled (KD)",
-   "hw": "1 v6e chip",
-   "acc": 48.2,
-   "cost": 0.096
-  },
-  {
-   "k": "rl",
-   "label": "KD + GRPO",
-   "hw": "1 v6e chip",
-   "acc": 52.2,
-   "cost": 0.091
+   "short": "MATH",
+   "student": "Gemma 4 E2B",
+   "arm": "rl",
+   "teacher": {
+    "cost": 1.656,
+    "acc": 92.5
+   },
+   "final": {
+    "cost": 0.343,
+    "acc": 78.4
+   },
+   "ratio": 4.8
   }
  ],
  "paired": [
   [
    "BIRD",
-   "distilled vs self-distilled",
+   "KD vs self-distillation",
    13.1,
    [
     10.7,
@@ -293,8 +290,26 @@
    ]
   ],
   [
+   "FinQA",
+   "KD vs self-distillation",
+   9.6,
+   [
+    6.9,
+    12.4
+   ]
+  ],
+  [
+   "MATH",
+   "KD vs self-distillation",
+   -4.3,
+   [
+    -5.4,
+    -3.2
+   ]
+  ],
+  [
    "BIRD",
-   "KD + GRPO vs distilled",
+   "GRPO vs its SFT student",
    4.0,
    [
     2.2,
@@ -303,16 +318,7 @@
   ],
   [
    "FinQA",
-   "distilled vs self-distilled",
-   9.6,
-   [
-    6.9,
-    12.4
-   ]
-  ],
-  [
-   "FinQA",
-   "KD + GRPO vs distilled",
+   "GRPO vs its SFT student",
    5.8,
    [
     3.9,
@@ -321,29 +327,11 @@
   ],
   [
    "MATH",
-   "distilled vs self-distilled",
-   -4.3,
-   [
-    -5.4,
-    -3.2
-   ]
-  ],
-  [
-   "MATH",
-   "self + GRPO vs self-distilled",
+   "GRPO vs its SFT student",
    1.8,
    [
     1.0,
     2.7
-   ]
-  ],
-  [
-   "MATH",
-   "self + GRPO vs base",
-   3.5,
-   [
-    2.6,
-    4.4
    ]
   ]
  ],
@@ -367,6 +355,68 @@
     "teacher answers hurt (KD −2.3); its own help (+1.9)",
     "GRPO that scores cut-off answers as wrong: +1.8"
    ]
+  }
+ ],
+ "routes": [
+  {
+   "key": "kd",
+   "arm": "kd",
+   "label": "KD + GRPO · BIRD, Qwen3-1.7B"
+  },
+  {
+   "key": "self",
+   "arm": "self",
+   "label": "Self-distillation + GRPO · MATH, Gemma 4 E2B"
+  }
+ ],
+ "gains": [
+  {
+   "short": "BIRD",
+   "sft_arm": "kd",
+   "sft": 17.6,
+   "rl": 4.0
+  },
+  {
+   "short": "FinQA",
+   "sft_arm": "kd",
+   "sft": 22.6,
+   "rl": 5.8
+  },
+  {
+   "short": "MATH",
+   "sft_arm": "self",
+   "sft": 1.7,
+   "rl": 1.8
+  }
+ ],
+ "compute": [
+  {
+   "short": "BIRD",
+   "stages": {
+    "sft": 3.6,
+    "grpo": 25.8,
+    "rollouts": 12.5
+   },
+   "note": "41.9 chip-h · $136 · 4.2e18 training FLOPs · teacher 5.1 H200-h"
+  },
+  {
+   "short": "FinQA",
+   "stages": {
+    "sft": 1.7,
+    "grpo": 16.3,
+    "rollouts": 5.1
+   },
+   "note": "23.1 chip-h · $79 · 2.0e18 training FLOPs · teacher 3.5 H200-h"
+  },
+  {
+   "short": "MATH",
+   "stages": {
+    "data": 6.2,
+    "sft": 1.3,
+    "grpo": 17.4,
+    "rollouts": 34.0
+   },
+   "note": "58.9 chip-h · $159 · 2.2e18 training FLOPs · no teacher in the recipe"
   }
  ]
 }
