@@ -263,7 +263,7 @@
 <text x="104.0" y="1314.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#635a3a" text-anchor="start" >Student already strong in the domain</text>
 <text x="104.0" y="1342.0" font-family="Caprasimo, Georgia, serif" font-size="21" font-weight="400" fill="#111314" text-anchor="start" >Self-distillation + GRPO</text>
 <text x="104.0" y="1370.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="700" fill="#111314" text-anchor="start" >Gemma 4 E2B: MATH 74.9 → 78.4 (teacher 92.5)</text>
-<text x="104.0" y="1392.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >teacher answers hurt (KD −2.3); its own help (+1.9)</text>
+<text x="104.0" y="1392.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >teacher data hurt (KD −2.3, corrections −10.8); own data helped (+1.9)</text>
 <text x="104.0" y="1414.0" font-family="Figtree, Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#635a3a" text-anchor="start" >GRPO that scores cut-off answers as wrong: +1.8</text>
 <rect x="836" y="1028" width="760" height="416" rx="18" fill="#ece4d3" stroke="#ddd3bf" stroke-width="2"/>
 <text x="862.0" y="1072.0" font-family="Caprasimo, Georgia, serif" font-size="27" font-weight="400" fill="#111314" text-anchor="start" >What it took</text>

@@ -352,7 +352,7 @@
    "recipe": "Self-distillation + GRPO",
    "lines": [
     "Gemma 4 E2B: MATH 74.9 → 78.4 (teacher 92.5)",
-    "teacher answers hurt (KD −2.3); its own help (+1.9)",
+    "teacher data hurt (KD −2.3, corrections −10.8); own data helped (+1.9)",
     "GRPO that scores cut-off answers as wrong: +1.8"
    ]
   }

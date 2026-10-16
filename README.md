@@ -132,6 +132,18 @@ The two GRPO variants differ by +0.98 [+0.16, +1.78]; the final student is +3.48
 
 **The KD route does not catch up.** GRPO on the KD student (same recipe, truncated rollouts dropped) adds +1.82 [+0.80, +2.86] over KD and ends level with base (−0.44 [−1.52, +0.66]). In a separate same-run evaluation, self-distillation + GRPO beats KD + GRPO by +2.82 [+1.78, +3.88].
 
+**Teacher corrections hurt more than teacher answers.** CORR shows the teacher the student's first failed answer and a sentence about it (cut off at the length limit, no boxed answer, or a named wrong answer; never the gold answer) and trains on the verified rewrites: 2,362 rows from the 2,793 training problems the student had failed at least once. Same-run evaluation, test:
+
+| Arm | MATH test | Δ vs base A [95% CI] |
+|---|---|---|
+| Base (two replicas) | 75.02% / 75.50% | +0.48 [−0.26, +1.22] |
+| CORR | 64.26% | **−10.76 [−11.96, −9.54]** |
+| KD | 72.18% | −2.84 [−3.96, −1.72] |
+| Self-distillation | 76.48% | +1.46 [+0.56, +2.34] |
+| Self-distillation + GRPO, truncated rollouts scored wrong | 78.32% | +3.30; **+1.84 [+1.00, +2.66] over self-distillation** |
+
+The corrected answers are concise teacher-style solutions (559 tokens on average against self-distillation's 1,013), from hard problems only, and about 8% of them carry correction language ("the student's error was…"). The last row repeats the earlier result (+1.82) in an independent evaluation.
+
 | Serving (MATH test prompts, 2,048-token limit; best error-free rate over a concurrency ladder) | $/hour | Requests/s | $ per 1,000 correct answers |
 |---|---|---|---|
 | Self-distillation + GRPO student, 1× TPU v6e chip | 2.70 (on-demand) | 2.79 | 0.343 |
@@ -152,7 +164,7 @@ The final MATH student costs **4.8× less per correct answer** than the teacher:
 - BIRD and FinQA are public, so the teacher and the base student may have seen the evaluation questions in pre-training. This applies to every arm; no evaluation question, database or report page was used in training. MATH is public too, and Gemma 4 was trained on large amounts of mathematics.
 - **The two-recipe rule rests on two students and three tasks.** The student changed together with the task (Qwen3-1.7B on BIRD and FinQA, Gemma 4 E2B on MATH), so "already strong in the domain" is the best explanation of the evidence, not an isolated cause. Run the self-distillation control first: it tells you which recipe the student needs.
 - **The MATH gates were set before each run and were not met.** KD was required to gain at least 5 points over base (it lost 2.3), and each GRPO stage at least 2 points over its starting point (+1.82 from KD; +0.50 [−0.34, +1.34] from self-distillation with truncated rollouts dropped, +0.84 in a later run; +1.82 [+1.00, +2.66] with truncated rollouts scored wrong). Scoring truncated rollouts as wrong was introduced after the first self-distillation + GRPO result; its run was specified before it started. During its second GRPO iteration the TPU VM was unavailable for seven hours, and that iteration trained on rollouts for 3,367 of the 6,262 problems (four of seven subjects); the other five iterations used all problems.
-- MATH grading is exact match after the reference normalisation, so answers that are equal but written differently (`2\sqrt{2}` and `\sqrt{8}`) count as wrong for every arm. Teacher corrections of the student's failed answers (CORR) were measured on BIRD only.
+- MATH grading is exact match after the reference normalisation, so answers that are equal but written differently (`2\sqrt{2}` and `\sqrt{8}`) count as wrong for every arm.
 
 ## Recipe
 
@@ -160,7 +172,7 @@ The final MATH student costs **4.8× less per correct answer** than the teacher:
 2. **Generate verified teacher data.** Sample the teacher on training questions (4 samples, T = 0.7). Keep only samples the task verifies (BIRD: the SQL returns the gold rows; FinQA: the number matches the gold answer), with at most 4 distinct answers per question. Audit for leakage against the evaluation set (evaluation databases or report pages, exact and 13-gram question overlap) and re-verify every kept answer.
 3. **Train.** LoRA SFT (rank 256, alpha 512, attention and MLP projections) on the TPU v6e-8, global batch 256, lr 1e-4 with cosine decay, 3 epochs. Loss is on the assistant tokens only. Merge the adapter and export a Hugging Face checkpoint.
 4. **Control.** Train the same recipe on the same number of the student's own verified samples (self-distillation).
-5. **Reinforce.** GRPO: sample the current student 8 times per training question at temperature 1.0, reward 1 when the answer verifies, train on up to 2,048 questions with mixed outcomes (PPO clip 0.2, KL to the starting checkpoint with β 0.02, one pass in steps of 64 sequences); six iterations, lr 2e-6 for the first two and 5e-6 after. On BIRD only, CORR: show the teacher the student's first failed answer and its execution result (never the gold query), ask for a minimal correction, keep verified corrections, same SFT recipe on the base student.
+5. **Reinforce.** GRPO: sample the current student 8 times per training question at temperature 1.0, reward 1 when the answer verifies, train on up to 2,048 questions with mixed outcomes (PPO clip 0.2, KL to the starting checkpoint with β 0.02, one pass in steps of 64 sequences); six iterations, lr 2e-6 for the first two and 5e-6 after. CORR (BIRD and MATH): show the teacher the student's first failed answer and feedback on it (BIRD: its execution result; MATH: cut off, no answer, or the wrong answer named; never the gold), ask for a minimal correction, keep verified corrections, same SFT recipe on the base student. It trailed KD on both tasks.
 6. **Evaluate and price.** Serve every arm and a second base replica together; compare paired; benchmark serving throughput; compute cost per correct answer from catalog prices.
 
 **For a student already strong in the domain** (the self-distillation control beats KD, as on MATH), replace step 3's data with the student's own verified answers (8 samples per question at T = 0.7, same SFT settings), and run step 5 from that checkpoint with `build_grpo_rollouts.py --keep-truncated`: rollouts cut off at the length limit stay in their group with reward 0, and the trainer leaves their end-of-turn token out of the loss.
