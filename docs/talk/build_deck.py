@@ -9,6 +9,7 @@ are copied from the repository's README, docs/RECIPE.md and docs/COMPUTE.md.
 
 Browser keys: Right / space / PageDown / click reveal the next build group, then the next slide; Left / PageUp step back.
 Down / Up jump a whole slide, Home / End, N toggles speaker notes, P prints (print shows every slide fully built).
+?export&step=k#n shows slide n at build step k with no counter; build_pptx.py uses it to render the PPTX.
 With ?qa in the URL the page writes every box whose content overflows into #qa (used by the build check).
 
 Usage: build_deck.py --out tpu_distil_talk.html --fonts DIR [--notes-md speaker_notes.md]
@@ -1667,6 +1668,7 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .chip.ok { color: __TEAL__; } .chip.bad { color: __CORAL__; }
 .build { opacity: 0; transition: opacity .3s ease; }
 .build.on { opacity: 1; }
+.export #counter, .export #notes-panel { display: none !important; } .export .build { transition: none; }
 .notes { display: none; }
 #notes-panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 34vh; overflow: auto; background: #ffffff; color: #111;
   font: 18px/1.5 Figtree, Arial, sans-serif; padding: 16px 28px; border-top: 4px solid __CORAL__; display: none; z-index: 10; white-space: pre-wrap; }
@@ -1702,6 +1704,8 @@ addEventListener('keydown',e=>{ if(['ArrowRight','PageDown',' '].includes(e.key)
   else if(e.key==='p'||e.key==='P') print(); });
 addEventListener('click',e=>{ if(e.target.closest('#notes-panel')) return; next(); });
 addEventListener('resize',fit); fit(); show((parseInt(location.hash.slice(1))||1)-1);
+const query=new URLSearchParams(location.search);   // ?export&step=k#n renders slide n at build step k, without the counter (used by build_pptx.py)
+if(query.has('export')){ document.body.classList.add('export'); step=Math.min(+(query.get('step')||0),steps(cur)); paint(); }
 if(location.search.includes('qa')) document.fonts.ready.then(()=>{
   document.querySelectorAll('.slide').forEach(e=>e.style.transform='none');
   const out=[]; slides.forEach((s,i)=>{ s.classList.add('active'); const sr=s.querySelector('.slide').getBoundingClientRect();
