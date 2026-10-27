@@ -11,6 +11,7 @@ Browser keys: arrows / space / PageUp / PageDown, Home / End, N toggles speaker 
 With ?qa in the URL the page writes every box whose content overflows into #qa (used by the build check).
 
 Usage: build_deck.py --out tpu_distil_talk.html --fonts DIR [--notes-md speaker_notes.md]
+DIR holds Figtree[wght].ttf (body) and InterTight[wght].ttf (headings), both from Google Fonts; they are embedded in the page.
 """
 from __future__ import annotations
 
@@ -129,14 +130,25 @@ def plain(s: str) -> str:
   return html.unescape(" ".join(re.sub(r"<[^>]+>", " ", s).split()))
 
 
-def content(ch, kicker, title, inner, notes, source=""):
+def source_line(source) -> str:
+  """One source line, or two stacked lines when a slide covers two topics."""
+  if not source:
+    return ""
+  if isinstance(source, str):
+    return f'<div class="source" style="left:{ML}px;width:{CW}px">{source}</div>'
+  return f'<div class="source two" style="left:{ML}px;width:{CW}px">{"<br>".join(source)}</div>'
+
+
+def content(ch, kicker, title, inner, notes, source="", also=()):
+  """A content slide. `also` names the part headers on it, so appendix links can target either part."""
   col = DARK
-  src = f'<div class="source" style="left:{ML}px;width:{CW}px">{source}</div>' if source else ""
+  src = source_line(source)
   add(f'''{chapter_track(ch)}
 <div class="kicker" style="left:{ML}px;top:70px"><span class="dot" style="background:{col}"></span>{esc(kicker)}</div>
 <h2 class="title" style="left:{ML}px;top:104px;width:{CW}px">{title}</h2>
 {inner}{src}''', notes)
   TITLES.append((len(SLIDES), plain(title)))
+  TITLES.extend((len(SLIDES), plain(t)) for t in also)
 
 
 def ref(fragment: str) -> tuple[int, str]:
@@ -162,7 +174,7 @@ def appendix(ch, code_, fragment, title, inner, notes, source=""):
   APPENDIX.append((code_, len(SLIDES), n, plain(title), col))
 
 
-def table(headers, rows, widths=None, size=24, bold_last=False, accent=TEAL):
+def table(headers, rows, widths=None, size=24, bold_last=False, accent=TEAL, cls=""):
   """An HTML table card; cells are trusted HTML."""
   cols = "".join(f'<col style="width:{w}%">' for w in widths) if widths else ""
   head = "".join(f"<th>{h}</th>" for h in headers)
@@ -170,7 +182,7 @@ def table(headers, rows, widths=None, size=24, bold_last=False, accent=TEAL):
   for i, r in enumerate(rows):
     cls = ' class="hl"' if bold_last and i == len(rows) - 1 else ""
     body.append(f"<tr{cls}>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>")
-  return (f'<div class="tbl" style="border-top:10px solid {NEUTRAL};font-size:{size}px"><table><colgroup>{cols}</colgroup>'
+  return (f'<div class="tbl {cls}" style="border-top:10px solid {NEUTRAL};font-size:{size}px"><table><colgroup>{cols}</colgroup>'
           f'<thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div>')
 
 
@@ -228,20 +240,20 @@ def statement(kicker, text, sub, notes, dark=False, accent=CORAL):
 
 # ------------------------------------------------------------------ components
 
-def card(title, body, accent=None, tag=None):
+def card(title, body, accent=None, tag=None, cls=""):
   accent = accent or NEUTRAL
   t = f'<div class="tag" style="background:{accent};color:{ON.get(accent, INK)}">{esc(tag)}</div>' if tag else ""
-  return f'<div class="card" style="border-top:10px solid {accent}">{t}<div class="card-t">{title}</div><div class="card-b">{body}</div></div>'
+  return f'<div class="card {cls}" style="border-top:10px solid {accent}">{t}<div class="card-t">{title}</div><div class="card-b">{body}</div></div>'
 
 
-def learn(text, accent=None, label="What we learned"):
+def learn(text, accent=None, label="What we learned", cls=""):
   accent = DARK  # lessons are structure, never a model colour
-  return (f'<div class="learn" style="border-left:10px solid {accent}"><div class="learn-l" style="color:{accent}">'
+  return (f'<div class="learn {cls}" style="border-left:10px solid {accent}"><div class="learn-l" style="color:{accent}">'
           f'{esc(label)}</div><div class="learn-b">{text}</div></div>')
 
 
-def stat(big, cap, accent=TEAL):
-  return f'<div class="stat"><div class="stat-big" style="color:{accent}">{big}</div><div class="stat-cap">{cap}</div></div>'
+def stat(big, cap, accent=TEAL, cls=""):
+  return f'<div class="stat {cls}"><div class="stat-big" style="color:{accent}">{big}</div><div class="stat-cap">{cap}</div></div>'
 
 
 def step_track(active: int) -> str:
@@ -272,10 +284,10 @@ def journey(i, title, visual, did, decision, learned, notes, source=""):
   content(2, f"The journey · step {i + 1} of 6", title, inner, notes, source)
 
 
-def code(text, accent=CORAL, label=""):
+def code(text, accent=CORAL, label="", cls=""):
   light = {CORAL: PINK, TEAL: "#b5decc", BLUE: SKY, GOLD: CREAM, GRAY: CREAM}.get(accent, CREAM)
   lab = f'<div class="code-l" style="color:{light}">{label}</div>' if label else ""
-  return f'<div class="code" style="border-top:8px solid {accent}">{lab}<pre>{esc(text)}</pre></div>'
+  return f'<div class="code {cls}" style="border-top:8px solid {accent}">{lab}<pre>{esc(text)}</pre></div>'
 
 
 # ------------------------------------------------------------------ charts
@@ -336,7 +348,7 @@ def quadrant(points, w, h, xmax=1.6, goal=True):
   if goal:
     o.append(R(sx(0) + 4, sy(80), sx(0.42) - sx(0), sy(44) - sy(80), CREAM, 16))
     o.append(T(sx(0) + 22, sy(76), "the goal:", 22, 700, DARK))
-    o.append(T(sx(0) + 22, sy(71.5), "cheap and accurate", 22, 700, DARK))
+    o.append(T(sx(0) + 22, sy(76) + max(28, sy(71.5) - sy(76)), "cheap and accurate", 22, 700, DARK))
   for v in (20, 40, 60, 80):
     o.append(Lf(x0, sy(v), x1, sy(v), RULE, 1.5))
     o.append(T(x0 - 14, sy(v) + 8, f"{v}%", 20, fill=MUTED, anchor="end"))
@@ -376,17 +388,17 @@ def line_chart(series, xs, w, h, lo, hi, xlabel, yfmt="{:.0f}"):
   return svg(w, h, "".join(o))
 
 
-def funnel(stages, w, h):
+def funnel(stages, w, h, num=36, lab=25):
   o = []
   vmax = stages[0][1]
   step = h / len(stages)
   bh = step * 0.64
-  for i, (lab, v, col) in enumerate(stages):
+  for i, (name, v, col) in enumerate(stages):
     y = i * step + (step - bh) / 2
     ln = (w - 380) * v / vmax
     o.append(R(0, y, ln, bh, col, 12))
-    o.append(T(24, y + bh / 2 + 13, f"{v:,}", 36, 800, ON.get(col, INK)))
-    o.append(T(ln + 20, y + bh / 2 + 9, lab, 25, 600))
+    o.append(T(num * 0.66, y + bh / 2 + num * 0.36, f"{v:,}", num, 800, ON.get(col, INK)))
+    o.append(T(ln + 20, y + bh / 2 + lab * 0.36, name, lab, 600))
   return svg(w, h, "".join(o))
 
 
@@ -474,22 +486,23 @@ def dumbbell(rows, w, h, label_w=300):
   return svg(w, h, "".join(o))
 
 
-def task_card(name, sub, accent, rows):
+def task_card(name, sub, accent, rows, cls=""):
   body = "".join(f'<div class="task-r"><span>{esc(k)}</span><div>{v}</div></div>' for k, v in rows)
-  return f'<div class="task" style="border-top:12px solid {accent}"><div class="task-h">{esc(name)}<span>{esc(sub)}</span></div>{body}</div>'
+  return f'<div class="task {cls}" style="border-top:12px solid {accent}"><div class="task-h">{esc(name)}<span>{esc(sub)}</span></div>{body}</div>'
 
 
-def outcome_mix(panels, w, h):
+def outcome_mix(panels, w, h, compact=False):
   """100% stacked bars of per-question outcomes over 8 samples, one panel per task.
   panels = [(title, [(label, all_wrong, mixed, all_right)])]."""
   o = []
-  gap = 60
+  gap = 40 if compact else 60
+  ft, fv, fl, fg_, sp = (20, 16, 16, 16, 9) if compact else (28, 22, 21, 22, 12)
   pw = (w - gap * (len(panels) - 1)) / len(panels)
-  top, bot = 56, h - 110
+  top, bot = (34, h - 64) if compact else (56, h - 110)
   ph = bot - top
   for p, (title, cols) in enumerate(panels):
     x0 = p * (pw + gap)
-    o.append(T(x0, 30, title, 28, 800))
+    o.append(T(x0, ft + 2, title, ft, 800))
     slot = pw / len(cols)
     bw = slot * 0.72
     for i, (lab, wrong, mixed, right) in enumerate(cols):
@@ -500,15 +513,134 @@ def outcome_mix(panels, w, h):
         sh = ph * v / 100
         o.append(R(x, y - sh + 1.5, bw, sh - 3, col, 6))
         if edge:
-          o.append(T(x + bw / 2, y - sh / 2 + 8, f"{v:.0f}", 22, 800, fg, "middle"))
+          o.append(T(x + bw / 2, y - sh / 2 + fv * 0.36, f"{v:.0f}", fv, 800, fg, "middle"))
         y -= sh
-      o.append(T(x + bw / 2, bot + 32, lab, 21, 600, MUTED, "middle"))
+      o.append(T(x + bw / 2, bot + fl + 8, lab, fl, 600, MUTED, "middle"))
   lx = 0
   for lab, col in (("all 8 answers right", CORAL), ("some right", SKY), ("all 8 wrong", GRAY)):
-    o.append(R(lx, h - 34, 26, 26, col, 6))
-    o.append(T(lx + 38, h - 12, lab, 22, fill=MUTED))
-    lx += 70 + 12 * len(lab)
+    o.append(R(lx, h - fg_ - 8, fg_ + 4, fg_ + 4, col, 6))
+    o.append(T(lx + fg_ + 14, h - 8, lab, fg_, fill=MUTED))
+    lx += 5 * sp + sp * len(lab)
   return svg(w, h, "".join(o))
+
+
+def merge_notes(*parts):
+  """Join the notes of slides shown together, summing their timings."""
+  total, out = 0.0, []
+  for p in parts:
+    m = re.search(r"\s*~(\d+(?:\.\d+)?) (min|s)\.\s*$", p)
+    if m:
+      total += float(m.group(1)) / (60 if m.group(2) == "s" else 1)
+      p = p[:m.start()]
+    out.append(p.strip())
+  return "\n".join(out) + f" ~{total:g} min."
+
+
+def head(col, span, top, text, sub=""):
+  """A part header on a slide that covers two topics; appendix links can point at it."""
+  s = f"<span>{esc(sub)}</span>" if sub else ""
+  return box(col, span, top, 50, f'<div class="hh">{esc(text)}{s}</div>')
+
+
+def vsep(top=TOP, bottom=BOT, col=6):
+  """A vertical rule in the gutter before `col`, separating the two halves of a slide."""
+  return f'<div class="vsep" style="left:{gx(col) - GUT / 2 - 1:.1f}px;top:{top:.1f}px;height:{bottom - top:.1f}px"></div>'
+
+
+def srow(big, cap, accent=TEAL):
+  """A compact stat: the number beside its caption."""
+  return f'<div class="srow"><div class="srow-b" style="color:{accent}">{big}</div><div class="srow-c">{cap}</div></div>'
+
+
+def runin(title, body, accent=None):
+  """A one-paragraph card whose bold title runs into its text."""
+  return f'<div class="ri" style="border-left:8px solid {accent or NEUTRAL}"><div><b>{title}</b> {body}</div></div>'
+
+
+def step_head(i, top, title):
+  names = ["Measure", "Generate", "Verify", "Distil", "Reinforce", "Serve"]
+  return box(0, 12, top, 46, f'<div class="sh"><b>{i + 1}</b><i>{names[i]}</i><span>{esc(title)}</span></div>')
+
+
+def journey_pair(i, title, steps, notes, source=""):
+  """Two consecutive training steps, one row each: header, visual (5 cols), three run-in panels (7 cols)."""
+  rh = (BOT - TOP - 24) / 2
+  inner = ""
+  for k, (stitle, visual, did, decision, learned) in enumerate(steps):
+    y = TOP + k * (rh + 24)
+    inner += step_head(i + k, y, stitle)
+    top, h = y + 54, rh - 54
+    inner += box(0, 5, top, h, visual, "vis")
+    ph = (h - 2 * 10) / 3
+    for j, (lab, txt, col) in enumerate((("What we did", did, MUTED), ("Decision", decision, BLUE), ("What we learned", learned, DARK))):
+      inner += box(5, 7, top + j * (ph + 10), ph, f'<div class="pr"><div><span class="prl" style="color:{col}">{lab}</span>{txt}</div></div>')
+  content(2, f"The journey · steps {i + 1}–{i + 2} of 6", title, inner, notes, source, also=[s[0] for s in steps])
+
+
+# compact visuals for the journey rows: viewBox 640 x 264
+
+VW, VH = 640, 264
+
+
+def measure_vis():
+  ax, pt = 440, 16
+  o = [T(0, 22, "Is the grader right?", 21, 800), T(70, 54, "gold answers", 16, 700, MUTED), T(180, 54, "shuffled answers", 16, 700, MUTED)]
+  for i, (k, g, s_) in enumerate([("BIRD", "100%*", "0.2%"), ("FinQA", "100%", "0.6%"), ("MATH", "100%", "0.0%")]):
+    y = 88 + i * 32
+    o += [T(0, y, k, 19, 800), T(70, y, g, 19, 800, DARK), T(180, y, s_, 19, 800, DARK)]
+  o += [T(330, 22, "How much does serving noise", 21, 800), T(330, 46, "move the score?", 21, 800), Lf(ax, 62, ax, 160, INK, 2)]
+  for i, (k, e, l, u) in enumerate([("BIRD", 0.3, -0.8, 1.4), ("FinQA", -1.9, -3.3, -0.5), ("MATH", -0.12, -0.88, 0.62)]):
+    y = 80 + i * 32
+    o += [T(330, y + 6, k, 17, 800), Lf(ax + l * pt, y, ax + u * pt, y, GRAY, 8), C(ax + e * pt, y, 9, INK, PAPER, 3),
+          T(ax + 2 * pt + 14, y + 6, f"{e:+.1f} [{l:+.1f}, {u:+.1f}]", 16, 700)]
+  o += [T(ax, 180, "0", 15, fill=MUTED, anchor="middle"), T(ax - 2 * pt, 180, "−2", 15, fill=MUTED, anchor="middle"),
+        T(ax + 2 * pt, 180, "+2", 15, fill=MUTED, anchor="middle"),
+        R(0, 194, VW, 70, PINK, 12), T(18, 220, "Teacher − untrained:", 17, 700, DARK),
+        T(18, 250, "BIRD +30.1 · FinQA +31.7 · MATH +17.6 points", 21, 800, DARK)]
+  return svg(VW, VH, "".join(o))
+
+
+def generate_vis():
+  def row(y, who, sub, fill, fg, mult, head_, l1, l2, tag, tagc):
+    return [R(0, y, 150, 124, fill, 16), T(75, y + 58, who, 24, 800, fg, "middle"), T(75, y + 88, sub, 17, 400, fg, "middle"),
+            arrow(160, y + 62, 224, MUTED, 4), T(192, y + 46, mult, 18, 800, MUTED, "middle"),
+            R(232, y, 408, 124, CARD, 16, RULE, 2), T(250, y + 30, head_, 20, 800), T(250, y + 58, l1, 16, 600, INK),
+            T(250, y + 84, l2, 16, 400, MUTED), T(250, y + 110, tag, 17, 700, tagc)]
+  o = (row(4, "Teacher", "8× H200", INK, "#ffffff", "× 4", "Teacher answers, T 0.7", "BIRD 33,728 · FinQA 24,436 · MATH 25,048",
+           "26–38 minutes per task on 8 GPUs", "for a weak student", TEAL) +
+       row(140, "Student", "1 v6e chip each", GOLD, INK, "× 8", "Its own answers, T 0.7", "MATH 50,096 · the control on every task",
+           "no teacher time", "for a strong student", GOLD))
+  return svg(VW, VH, "".join(o))
+
+
+def verify_vis():
+  stages = [("teacher answers", 33728, INK), ("pass the grader", 20133, DARK), ("distinct, ≤ 4 per question", 10504, DARK), ("BIRD training set", 10112, TEAL)]
+  o = []
+  for i, (name, v, col) in enumerate(stages):
+    y = i * 34
+    ln = 300 * v / stages[0][1]
+    o += [R(0, y, ln, 26, col, 8), T(12, y + 19, f"{v:,}", 17, 800, ON.get(col, INK)), T(ln + 14, y + 19, name, 17, 600)]
+  xs = (0, 220, 340, 500)
+  o += [T(x, 162, h_, 14, 800, MUTED, extra='letter-spacing="1.5"') for x, h_ in zip(xs, ("TASK", "ANSWERS", "PASS THE GRADER", "TRAINING SET"))]
+  o.append(Lf(0, 174, VW, 174, INK, 2))
+  for r, row in enumerate([["FinQA, teacher", "24,436", "18,487", "6,016"], ["MATH, student", "50,096", "72.6%", "4,992"]]):
+    y = 206 + r * 40
+    o += [T(x, y, c, 18) for x, c in zip(xs, row)]
+    if r == 0:
+      o.append(Lf(0, y + 14, VW, y + 14, RULE, 2))
+  return svg(VW, VH, "".join(o))
+
+
+def distil_vis():
+  o = [T(0, 22, "LoRA fine-tuning on TPU v6e-8", 21, 800),
+       *[R(i * 56, 34, 44, 44, DARK, 10) for i in range(8)], *[R(i * 56 + 13, 47, 18, 18, "#ffffff", 4) for i in range(8)],
+       T(0, 104, "117 / 69 / 57 steps (BIRD / FinQA / MATH) · 10–27 minutes", 17, 600, MUTED),
+       T(0, 136, "Checks we ran before trusting any result", 20, 800),
+       R(0, 148, 310, 64, CARD, 12, RULE, 2), T(16, 180, "0.998", 26, 800, DARK), T(16, 202, "trainer and server agree (top-1)", 15, fill=MUTED),
+       R(330, 148, 310, 64, CARD, 12, RULE, 2), T(346, 180, "1 : 1", 26, 800, DARK), T(346, 202, "retrain gave a byte-identical model", 15, fill=MUTED),
+       T(0, 236, "rank 256 · alpha 512 · attention + MLP · batch 256 · 3 epochs", 17, fill=INK),
+       T(0, 260, "Qwen3 and Gemma 4 loaders · loss on answer tokens only", 17, fill=INK)]
+  return svg(VW, VH, "".join(o))
 
 
 def build():
@@ -545,78 +677,90 @@ After that, Fred will show his experiment, which took a different route: teachin
   dark_divider(1, "The problem", "Frontier models do the job well, but they are expensive and GPUs are hard to get. Small models are cheap, but they don't know the domain.", CORAL,
                "Part 1: the problem. ~6 minutes.")
 
-  content(0, "The problem", "One frontier model needs a whole GPU server",
-          box(0, 5, TOP, 440, chips(8, 4, 130, 24, INK, "8× H200 for one teacher replica")) +
-          box(5, 2, TOP, 440, '<div class="vs">vs</div>') +
-          box(7, 5, TOP, 440, chips(1, 1, 284, 0, DARK, "1× TPU v6e chip for the student")) +
-          box(0, 4, TOP + 480, BOT - TOP - 480, stat("552B", "parameters in the teacher, DeepSeek-V4.1-Flash", INK)) +
-          box(4, 4, TOP + 480, BOT - TOP - 480, stat("$36.60 / h", "for one teacher replica, at the cheapest listed H200 rate", INK)) +
-          box(8, 4, TOP + 480, BOT - TOP - 480, stat("$2.70 / h", "for one TPU v6e chip, on demand", DARK)),
-          """Let's start with the hardware. Our teacher, DeepSeek-V4.1-Flash, is a mixture-of-experts model with 552 billion parameters. One copy of it fills a whole server of eight H200 GPUs, which costs 36 dollars 60 an hour at the cheapest listed rate.
-GPUs like these are hard to get. Each copy of the model ties up a full server, so serving more users means renting more servers. A single TPU v6e chip costs 2 dollars 70 an hour. The question is whether we can move useful work from the left side of this slide to the right. ~1.5 min.""")
+  y1 = TOP + 62
+  hw_svg = svg(820, 230, "".join([
+      *[R(20 + (i % 4) * 84, 6 + (i // 4) * 84, 70, 70, INK, 12) for i in range(8)],
+      *[R(20 + (i % 4) * 84 + 20, 6 + (i // 4) * 84 + 20, 30, 30, "#ffffff", 5) for i in range(8)],
+      T(181, 214, "8× H200 for one teacher replica", 22, 700, INK, "middle"),
+      T(450, 112, "vs", 64, 700, DARK, "middle", 'font-family="Inter Tight, Figtree, Arial, sans-serif"'),
+      R(560, 4, 160, 160, DARK, 20), R(605, 49, 70, 70, "#ffffff", 10),
+      T(640, 214, "1× TPU v6e chip for the student", 22, 700, INK, "middle")]), bare=True)
+  sh = (BOT - y1 - 230 - 12 - 2 * 12) / 3
+  ch = (BOT - y1 - 440 - 16)
+  content(0, "The problem", "Big models are expensive; small ones fall short",
+          head(0, 6, TOP, "One frontier model needs a whole GPU server") +
+          box(0, 6, y1, 230, hw_svg) +
+          "".join(box(0, 6, y1 + 242 + i * (sh + 12), sh, srow(b, c, a)) for i, (b, c, a) in enumerate([
+              ("552B", "parameters in the teacher, DeepSeek-V4.1-Flash", INK),
+              ("$36.60 / h", "for one teacher replica, at the cheapest listed H200 rate", INK),
+              ("$2.70 / h", "for one TPU v6e chip, on demand", DARK)])) +
+          vsep() +
+          head(6, 6, TOP, "Every correct answer has a price") +
+          box(6, 6, y1, 440, quadrant([("Teacher", 1.438, 60.7, INK, "end"), ("Small model, untrained", 0.178, 30.6, GRAY, "start")], 800, 430)) +
+          box(6, 3, y1 + 456, ch, card("The big model is accurate but expensive", "It writes correct SQL for <b>60.7%</b> of questions, and 1,000 correct answers cost <b>$1.44</b>.", INK, cls="sm")) +
+          box(9, 3, y1 + 456, ch, card("The small model is cheap but often wrong", "1,000 correct answers cost only <b>$0.18</b>, but it gets just <b>30.6%</b> of questions right.", GRAY, cls="sm")),
+          merge_notes("""Let's start with the hardware. Our teacher, DeepSeek-V4.1-Flash, is a mixture-of-experts model with 552 billion parameters. One copy of it fills a whole server of eight H200 GPUs, which costs 36 dollars 60 an hour at the cheapest listed rate.
+GPUs like these are hard to get. Each copy of the model ties up a full server, so serving more users means renting more servers. A single TPU v6e chip costs 2 dollars 70 an hour. The question is whether we can move useful work from the left side of this slide to the right. ~1.5 min.""",
+                      """We put a price on every correct answer. On the BIRD text-to-SQL benchmark, the teacher gets 60.7 percent of questions right, and a thousand correct answers cost a dollar 44. The untrained small model on one TPU chip costs 18 cents per thousand correct answers, but it gets less than a third of the questions right.
+We don't want either of these. We want a model in the top-left corner, one that is cheap and accurate. Keep this chart in mind, because we'll come back to it. ~1.5 min."""),
+          "BIRD dev: 1,534 questions on 11 databases never used in training. Cost = $ per hour ÷ (requests per second × 3,600 × accuracy).",
+          also=["One frontier model needs a whole GPU server", "Every correct answer has a price"])
 
-  content(0, "The problem", "Every correct answer has a price",
-          box(0, 7, TOP, BOT - TOP, quadrant([("Teacher", 1.438, 60.7, INK, "end"), ("Small model, untrained", 0.178, 30.6, GRAY, "start")], 1040, 720)) +
-          box(7, 5, TOP, (BOT - TOP - 30) / 2, card("The big model is accurate but expensive", "It writes correct SQL for <b>60.7%</b> of questions, and 1,000 correct answers cost <b>$1.44</b>.", INK)) +
-          box(7, 5, TOP + (BOT - TOP - 30) / 2 + 30, (BOT - TOP - 30) / 2, card("The small model is cheap but often wrong", "1,000 correct answers cost only <b>$0.18</b>, but it gets just <b>30.6%</b> of questions right.", GRAY)),
-          """We put a price on every correct answer. On the BIRD text-to-SQL benchmark, the teacher gets 60.7 percent of questions right, and a thousand correct answers cost a dollar 44. The untrained small model on one TPU chip costs 18 cents per thousand correct answers, but it gets less than a third of the questions right.
-We don't want either of these. We want a model in the top-left corner, one that is cheap and accurate. Keep this chart in mind, because we'll come back to it. ~1.5 min.""",
-          "BIRD dev: 1,534 questions on 11 databases never used in training. Cost = $ per hour ÷ (requests per second × 3,600 × accuracy).")
-
+  bet_h = 196
+  top_h = BOT - TOP - bet_h - 20
   content(0, "The problem", "Generic small models miss domain details",
-          box(0, 6, TOP, 170, '<div class="q"><span>Question</span>Which county is member Adela O\'Gallagher\'s hometown in?</div>') +
-          box(0, 6, TOP + 190, 255, code("WHERE member.first_name = 'Adela'\n  AND member.last_name = 'O\\'Gallagher'", GRAY, "Untrained · SQLite syntax error")) +
-          box(0, 6, TOP + 465, BOT - TOP - 465, code("WHERE m.first_name = 'Adela'\n  AND m.last_name = 'O''Gallagher'", CORAL, "Trained student · correct rows")) +
-          box(6, 6, TOP, 320, hbars([("Simple", "925 questions", 40.3, GRAY), ("Moderate", "465 questions", 20.3, GRAY),
-                                     ("Challenging", "144 questions", 10.3, GRAY)], 760, 320, 75, 250, bar_h=52)) +
-          box(6, 6, TOP + 340, BOT - TOP - 340, learn("The untrained 1.7B model gets only <b>10%</b> of the hardest questions right. Of its wrong answers, <b>574</b> return the wrong rows and <b>462</b> are not valid SQLite, because the model invents columns or uses another dialect's syntax. Companies see the same problem with their own schemas and SQL dialects.", CORAL, "Why fine-tune for the domain")),
-          """Here is what "weak in the domain" looks like, with a real BIRD question. The untrained small model escapes the apostrophe the way MySQL does, and SQLite rejects the query. After training, the student uses SQLite's doubled quote and gets the right rows.
+          box(0, 6, TOP, 112, '<div class="q sm"><span>Question</span>Which county is member Adela O\'Gallagher\'s hometown in?</div>') +
+          box(0, 6, TOP + 124, (top_h - 136) / 2, code("WHERE member.first_name = 'Adela'\n  AND member.last_name = 'O\\'Gallagher'", GRAY, "Untrained · SQLite syntax error", cls="sm")) +
+          box(0, 6, TOP + 136 + (top_h - 136) / 2, (top_h - 136) / 2, code("WHERE m.first_name = 'Adela'\n  AND m.last_name = 'O''Gallagher'", CORAL, "Trained student · correct rows", cls="sm")) +
+          box(6, 6, TOP, 224, hbars([("Simple", "925 questions", 40.3, GRAY), ("Moderate", "465 questions", 20.3, GRAY),
+                                     ("Challenging", "144 questions", 10.3, GRAY)], 760, 224, 75, 250, bar_h=44)) +
+          box(6, 6, TOP + 236, top_h - 236, learn("The untrained 1.7B model gets only <b>10%</b> of the hardest questions right. Of its wrong answers, <b>574</b> return the wrong rows and <b>462</b> are not valid SQLite, because the model invents columns or uses another dialect's syntax. Companies see the same problem with their own schemas and SQL dialects.", CORAL, "Why fine-tune for the domain", cls="sm")) +
+          box(0, 12, BOT - bet_h, bet_h, f'''<div class="bet"><div class="bet-k" style="color:{GOLD}"><span class="dot" style="background:{GOLD}"></span>The bet</div>
+<div class="bet-s">We bet that a big model could teach a small one, and that the small one could run on a single TPU chip.</div>
+<div class="bet-b">Before we started, we set two targets: at least <b>5 points</b> better than the untrained student, and at least <b>10×</b> cheaper per correct answer than the teacher.</div></div>'''),
+          merge_notes("""Here is what "weak in the domain" looks like, with a real BIRD question. The untrained small model escapes the apostrophe the way MySQL does, and SQLite rejects the query. After training, the student uses SQLite's doubled quote and gets the right rows.
 On the right you can see that the untrained model solves 40 percent of the simple questions and only 10 percent of the hardest ones. 462 of its wrong answers aren't even valid SQL. This is the gap companies care about: their own schemas and their own SQL dialect. ~1.5 min.""",
+                      """Here was our bet. We use the big model as a teacher, train the small model on its answers, and serve the student on a single TPU chip.
+Before we started, we wrote down what success would mean: the student had to be at least five points better than before, with a confidence interval above zero, and at least ten times cheaper per correct answer than the teacher. We tested the bet three times, and the third test showed us where it breaks down. ~1 min."""),
           "BIRD dev; accuracy by BIRD's difficulty label for the untrained Qwen3-1.7B; example dev-1347, question paraphrased")
-
-  statement("The bet", "We bet that a big model could teach a small one, and that the small one could run on a single TPU chip.",
-            "Before we started, we set two targets: at least <b>5 points</b> better than the untrained student, and at least <b>10×</b> cheaper per correct answer than the teacher.",
-            """Here was our bet. We use the big model as a teacher, train the small model on its answers, and serve the student on a single TPU chip.
-Before we started, we wrote down what success would mean: the student had to be at least five points better than before, with a confidence interval above zero, and at least ten times cheaper per correct answer than the teacher. We tested the bet three times, and the third test showed us where it breaks down. ~1 min.""", dark=True, accent=GOLD)
 
   # ---------------- 2. experiments
   dark_divider(2, "The experiments", "We ran the same pipeline on three tasks with two different students.", GOLD, "Part 2: the experiment setup. ~5 minutes.")
 
+  th = 500
+  band = BOT - TOP - th - 12 - 58
   content(1, "The experiments", "Each task has an automatic grader",
-          box(0, 4, TOP, BOT - TOP, task_card("BIRD", "text-to-SQL", NEUTRAL, [
+          box(0, 4, TOP, th, task_card("BIRD", "text-to-SQL", NEUTRAL, [
               ("Input", "a database schema, example rows, a hint and a question"),
               ("Answer", "one SQLite query"),
               ("Grader", "runs the query and compares its rows with the gold rows"),
               ("Evaluate", "dev: 1,534 questions on 11 unseen databases"),
               ("Train", "8,432 questions on 64 databases"),
-              ("Student", "<b>Qwen3-1.7B</b> scores 30.6%; the teacher scores 60.7%")])) +
-          box(4, 4, TOP, BOT - TOP, task_card("FinQA", "financial reports", NEUTRAL, [
+              ("Student", "<b>Qwen3-1.7B</b> scores 30.6%; the teacher scores 60.7%")], cls="sm")) +
+          box(4, 4, TOP, th, task_card("FinQA", "financial reports", NEUTRAL, [
               ("Input", "one earnings-report page: text, a table, a question"),
               ("Answer", "<span class=mono>Answer: &lt;number&gt;</span>"),
               ("Grader", "checks that the number is within 1% of the gold answer"),
               ("Evaluate", "test: 1,147 questions on unseen report pages"),
               ("Train", "6,109 questions after removing overlaps"),
-              ("Student", "<b>Qwen3-1.7B</b> scores 44.0%; the teacher scores 75.7%")])) +
-          box(8, 4, TOP, BOT - TOP, task_card("MATH", "competition maths", NEUTRAL, [
+              ("Student", "<b>Qwen3-1.7B</b> scores 44.0%; the teacher scores 75.7%")], cls="sm")) +
+          box(8, 4, TOP, th, task_card("MATH", "competition maths", NEUTRAL, [
               ("Input", "a competition problem, 7 subjects, 5 levels"),
               ("Answer", "<span class=mono>\\boxed{answer}</span>"),
               ("Grader", "checks the boxed answer against the gold answer after standard clean-up"),
               ("Evaluate", "test: 5,000 problems"),
               ("Train", "6,262 problems after removing overlaps"),
-              ("Student", "<b>Gemma 4 E2B</b> scores 74.9%; the teacher scores 92.5%")])),
-          """We ran three experiments through the same pipeline. In BIRD, the model writes SQL against a database schema, and the grader runs the query and compares the rows. In FinQA, the model answers a numerical question about a page from an earnings report, which has text and a table, and the grader checks that the number is within one percent. In MATH, the model solves competition problems and puts its answer in a box, and the grader checks for an exact match.
+              ("Student", "<b>Gemma 4 E2B</b> scores 74.9%; the teacher scores 92.5%")], cls="sm")) +
+          head(0, 12, TOP + th + 12, "One student starts weak, the other starts strong", "untrained student vs teacher, same prompt") +
+          box(0, 8, BOT - band, band, card("Qwen3-1.7B starts weak", "It is about 30 points behind the teacher on SQL and finance, so it has the most to learn. It is also the cheapest to serve.", TEAL, cls="sm")) +
+          box(8, 4, BOT - band, band, card("Gemma 4 E2B starts strong", "It already solves 74.9% of MATH problems. We wanted to know if a teacher still helps.", GOLD, cls="sm")),
+          merge_notes("""We ran three experiments through the same pipeline. In BIRD, the model writes SQL against a database schema, and the grader runs the query and compares the rows. In FinQA, the model answers a numerical question about a page from an earnings report, which has text and a table, and the grader checks that the number is within one percent. In MATH, the model solves competition problems and puts its answer in a box, and the grader checks for an exact match.
 Each task is one module in the code, with its own prompt, answer extraction and grader. Everything else is shared: generation, verification, training and serving. Every grader also passes two checks: gold answers score 100 percent and shuffled answers score close to zero. ~1.5 min.""",
-          "Teacher DeepSeek-V4.1-Flash on 8× H200 for all three; students served by vLLM-TPU on one v6e chip; non-thinking mode throughout")
-
-  h2 = (BOT - TOP - 24) / 2
-  content(1, "The experiments", "One student starts weak, the other starts strong",
-          box(0, 8, TOP, BOT - TOP, dumbbell([("BIRD", "Qwen3-1.7B", 30.6, 60.7, TEAL), ("FinQA", "Qwen3-1.7B", 44.0, 75.7, TEAL),
-                                              ("MATH", "Gemma 4 E2B", 74.9, 92.5, GOLD)], 1100, 720)) +
-          box(8, 4, TOP, h2, card("Qwen3-1.7B starts weak", "It is about 30 points behind the teacher on SQL and finance, so it has the most to learn. It is also the cheapest to serve.", TEAL)) +
-          box(8, 4, TOP + h2 + 24, h2, card("Gemma 4 E2B starts strong", "It already solves 74.9% of MATH problems. We wanted to know if a teacher still helps.", GOLD)),
-          """We chose each student by how far it was behind the teacher, measured on the same benchmark with the same prompt. Qwen3-1.7B is about 30 points behind on both SQL and finance, so it has a lot to learn. The next size up, Qwen3-4B, already matched the teacher on BIRD, so there was nothing left to teach it.
-For the third experiment we picked a different kind of student on purpose: Gemma 4 E2B on competition maths. It is already strong, at 74.9 percent, and much closer to the teacher. That let us test whether a teacher still helps a student like that. ~1.5 min.""",
-          "Untrained student vs teacher, same prompt, greedy decoding; Qwen3-4B already scored 61.7% on BIRD and was not used")
+                      """We chose each student by how far it was behind the teacher, measured on the same benchmark with the same prompt. Qwen3-1.7B is about 30 points behind on both SQL and finance, so it has a lot to learn. The next size up, Qwen3-4B, already matched the teacher on BIRD, so there was nothing left to teach it.
+For the third experiment we picked a different kind of student on purpose: Gemma 4 E2B on competition maths. It is already strong, at 74.9 percent, and much closer to the teacher. That let us test whether a teacher still helps a student like that. ~1.5 min."""),
+          ["Teacher DeepSeek-V4.1-Flash on 8× H200 for all three; students served by vLLM-TPU on one v6e chip; non-thinking mode throughout",
+           "Untrained student vs teacher, same prompt, greedy decoding; Qwen3-4B already scored 61.7% on BIRD and was not used"],
+          also=["One student starts weak, the other starts strong"])
 
   hcard = (BOT - TOP - 30) / 2
   dec = [("Tasks", "Tasks with automatic graders", "A program checks every answer, so one run takes minutes and can show a 2-point change. An agentic benchmark needs hours per run.", CORAL),
@@ -626,11 +770,11 @@ For the third experiment we picked a different kind of student on purpose: Gemma
          ("Training", "LoRA on one TPU host", "LoRA fits on a single TPU v6e-8, and every size is a multiple of 256 to match the chip's matrix unit.", SKY),
          ("Evaluation", "Comparisons within one run", "We evaluate every model, a control and a second copy of the baseline together.", CORAL)]
   cards = []
-  for i, (k, head, why, col) in enumerate(dec):
+  for i, (k, head_, why, col) in enumerate(dec):
     c, r = (i % 3) * 4, i // 3
     cards.append(box(c, 4, TOP + r * (hcard + 30), hcard,
                      f'''<div class="dec" style="border-top:10px solid {NEUTRAL}"><div class="dec-k">{esc(k)}</div>
-<div class="dec-c">{esc(head)}</div><div class="dec-w">{esc(why)}</div></div>'''))
+<div class="dec-c">{esc(head_)}</div><div class="dec-w">{esc(why)}</div></div>'''))
   content(1, "The experiments", "Six decisions shaped the experiments", "".join(cards),
           """Six decisions shaped all three experiments. We picked tasks with automatic graders, so a single run takes a few minutes and can show a two-point change. We used a weak student and a strong one, to see when a teacher helps. We trained only on verified answers. We kept answers short, without long reasoning traces. We trained with LoRA on one TPU host. And we compared models only within the same run, alongside a control and a second copy of the baseline. ~1.5 min.""")
 
@@ -640,176 +784,139 @@ For the third experiment we picked a different kind of student on purpose: Gemma
   steps = [("Measure", "graders, noise floor", "teacher vs student", CORAL), ("Generate", "teacher answers, or", "the student's own", GOLD),
            ("Verify", "grade every answer", "audit for leaks", TEAL), ("Distil", "LoRA SFT on TPU", "10–27 minutes", BLUE),
            ("Reinforce", "GRPO, 6 rounds", "rewards correct answers", CORAL), ("Serve", "1 chip per replica", "price each answer", SKY)]
-  content(2, "The journey", "Every experiment follows the same six steps",
-          box(0, 12, TOP, 250, flow_svg(steps, CW, 250)) +
-          box(0, 4, TOP + 290, BOT - TOP - 290, stat("3 tasks", "Both students share one code path; only the task module changes.", DARK)) +
-          box(4, 4, TOP + 290, BOT - TOP - 290, stat("10–27 min", "to distil a student on one TPU v6e-8 host", DARK)) +
-          box(8, 4, TOP + 290, BOT - TOP - 290, stat("4.8–17.5×", "cheaper per correct answer than the teacher at the end", CORAL)),
-          """Here is the whole process on one slide. All three experiments follow it. We measure the gap and the noise. We generate training answers, from the teacher for a weak student or from the student itself for a strong one. We check every answer with the task's grader. We distil with LoRA on one TPU host. We reinforce with GRPO. And we serve each student on one chip and work out the price of each answer. Distillation takes 10 to 27 minutes, and the final students are 4.8 to 17.5 times cheaper per correct answer than the teacher. ~1 min.""")
-
   layers = [("Teacher", "8× H200, Vertex AI", INK, ["DeepSeek-V4.1-Flash", "Model Garden vLLM", "TP 8 + expert parallel"]),
             ("Pipeline", "CPU VM", GOLD, ["Python standard library", "sqlite3", "JSONL records", "paired bootstrap"]),
             ("Student serving", "1 TPU v6e chip each", TEAL, ["vLLM-TPU", "tpu-inference backend", "JAX"]),
             ("Training", "TPU v6e-8 host", BLUE, ["JAX + libtpu", "Tunix", "qwix LoRA", "Flax NNX", "Optax", "Orbax"]),
             ("Glue", "everywhere", SKY, ["Hugging Face transformers", "safetensors", "Cloud Storage"])]
-  lh = (BOT - TOP - 4 * 18) / 5
-  stack_html = "".join(box(0, 8, TOP + i * (lh + 18), lh,
-                           f'<div class="layer" style="border-left-color:{INK if n == "Teacher" else DARK}"><div class="layer-l">{esc(n)}<span>{esc(where)}</span></div>'
+  fh = 200
+  st = TOP + fh + 16 + 58
+  lh = (BOT - st - 4 * 10) / 5
+  stack_html = "".join(box(0, 8, st + i * (lh + 10), lh,
+                           f'<div class="layer sm" style="border-left-color:{INK if n == "Teacher" else DARK}"><div class="layer-l">{esc(n)}<span>{esc(where)}</span></div>'
                            f'<div class="pills">{"".join(f"<span class=pill>{esc(p)}</span>" for p in ps)}</div></div>')
                        for i, (n, where, c, ps) in enumerate(layers))
-  hw = (BOT - TOP - 2 * 24) / 3
-  content(2, "The journey", "We built everything on open-source libraries",
+  rc = [("One code path", "Both students share one code path; only the task module changes."),
+        ("One checkpoint format", "Trainer, server and storage all use merged Hugging Face safetensors."),
+        ("Simple pipeline scripts", "It uses standard-library Python and JSONL, so every number can be regenerated."),
+        ("One trainer for both models", "The same Tunix trainer handles Qwen3 and Gemma 4 on one v6e-8.")]
+  rh = (BOT - st - 3 * 10) / 4
+  content(2, "The journey", "Every experiment follows the same six steps",
+          box(0, 12, TOP, fh, flow_svg(steps, CW, 250)) +
+          head(0, 12, TOP + fh + 16, "We built everything on open-source libraries", "distilling takes 10–27 min on one TPU v6e-8 host") +
           stack_html +
-          box(8, 4, TOP, hw, card("One checkpoint format", "Trainer, server and storage all use merged Hugging Face safetensors.", NEUTRAL)) +
-          box(8, 4, TOP + hw + 24, hw, card("Simple pipeline scripts", "It uses standard-library Python and JSONL, so every number can be regenerated.", NEUTRAL)) +
-          box(8, 4, TOP + 2 * (hw + 24), hw, card("One trainer for both models", "The same Tunix trainer handles Qwen3 and Gemma 4 on one v6e-8.", NEUTRAL)),
-          """Everything in the stack is open source. The teacher runs in Vertex AI Model Garden's vLLM container on eight H200s. The pipeline is plain Python standard-library scripts that write JSONL, so we can regenerate every number from the raw files. We serve students with vLLM-TPU, one copy per chip, and train them with Tunix and qwix LoRA in JAX on one v6e-8 host. The same trainer handles both Qwen3 and Gemma 4. The trainer, the server and storage all use one checkpoint format, Hugging Face safetensors. ~1 min.""",
-          "Versions: vLLM 0.26.1rc1 TPU build, JAX 0.11.0, libtpu 0.0.44, Tunix 0.1.8, qwix 0.1.8, Flax 0.12.8, transformers 5.12.1 (docs/RECIPE.md)")
+          "".join(box(8, 4, st + i * (rh + 10), rh, runin(t, b)) for i, (t, b) in enumerate(rc)),
+          merge_notes("""Here is the whole process on one slide. All three experiments follow it. We measure the gap and the noise. We generate training answers, from the teacher for a weak student or from the student itself for a strong one. We check every answer with the task's grader. We distil with LoRA on one TPU host. We reinforce with GRPO. And we serve each student on one chip and work out the price of each answer. Distillation takes 10 to 27 minutes, and the final students are 4.8 to 17.5 times cheaper per correct answer than the teacher. ~1 min.""",
+                      """Everything in the stack is open source. The teacher runs in Vertex AI Model Garden's vLLM container on eight H200s. The pipeline is plain Python standard-library scripts that write JSONL, so we can regenerate every number from the raw files. We serve students with vLLM-TPU, one copy per chip, and train them with Tunix and qwix LoRA in JAX on one v6e-8 host. The same trainer handles both Qwen3 and Gemma 4. The trainer, the server and storage all use one checkpoint format, Hugging Face safetensors. ~1 min."""),
+          "Versions: vLLM 0.26.1rc1 TPU build, JAX 0.11.0, libtpu 0.0.44, Tunix 0.1.8, qwix 0.1.8, Flax 0.12.8, transformers 5.12.1 (docs/RECIPE.md)",
+          also=["We built everything on open-source libraries"])
 
-  vis_w, vis_h = 1040, 640
-  ax = 640
-  pt = 55
-  noise = [("BIRD", 0.3, -0.8, 1.4), ("FinQA", -1.9, -3.3, -0.5), ("MATH", -0.12, -0.88, 0.62)]
-  journey(0, "Check the measurements before the experiment",
-          svg(vis_w, vis_h, "".join([
-              T(0, 30, "Is the grader right?", 30, 800),
-              T(300, 72, "gold answers", 22, 700, MUTED), T(560, 72, "shuffled answers", 22, 700, MUTED),
-              *[t for i, (k, g, s_) in enumerate([("BIRD", "100%*", "0.2%"), ("FinQA", "100%", "0.6%"), ("MATH", "100%", "0.0%")])
-                for t in (T(0, 112 + i * 40, k, 26, 800), T(300, 112 + i * 40, g, 26, 800, DARK), T(560, 112 + i * 40, s_, 26, 800, DARK))],
-              T(0, 270, "How much does serving noise move the score?", 30, 800),
-              Lf(ax, 290, ax, 450, INK, 3),
-              *[t for i, (k, e, l, u) in enumerate(noise)
-                for t in (T(0, 330 + i * 50, k, 26, 800), Lf(ax + l * pt, 322 + i * 50, ax + u * pt, 322 + i * 50, GRAY, 10),
-                          C(ax + e * pt, 322 + i * 50, 13, INK, PAPER, 4), T(ax + 2 * pt + 20, 330 + i * 50, f"{e:+.1f} [{l:+.1f}, {u:+.1f}]", 22, 700))],
-              T(ax, 482, "0", 20, fill=MUTED, anchor="middle"), T(ax - 2 * pt, 482, "−2", 20, fill=MUTED, anchor="middle"),
-              T(ax + 2 * pt, 482, "+2", 20, fill=MUTED, anchor="middle"),
-              R(0, 540, vis_w, 80, PINK, 14), T(24, 590, "Teacher − untrained: BIRD +30.1 · FinQA +31.7 · MATH +17.6 points", 26, 800, DARK)])),
-          "We checked that every grader gives gold answers 100% and shuffled answers close to 0%. We also served two copies of each untrained model to measure noise.",
-          "We compare models only <b>within a single run</b>, and every run includes a second copy of the baseline.",
-          "Greedy decoding on vLLM-TPU isn't perfectly repeatable. Two copies of the same FinQA model differed by 1.9 points, so we can't trust a small gain without a noise floor.",
-          """Step one is to check the measurements before running the experiment. Every grader passes two checks: gold answers score 100 percent and shuffled answers score almost zero. Then we serve two copies of each untrained model side by side. On FinQA the two copies differ by 1.9 points, because greedy decoding on TPU serving isn't perfectly repeatable. So every comparison in this talk comes from a single run that includes a second copy of the baseline. The gaps to the teacher are 30, 32 and 18 points. ~1.5 min.""",
-          "* BIRD gold scores 100% of the 1,530 gold queries that execute (99.7% of 1,534)")
+  journey_pair(0, "Measure the noise, then choose the training answers", [
+      ("Check the measurements before the experiment", measure_vis(),
+       "We checked that every grader gives gold answers 100% and shuffled answers close to 0%. We also served two copies of each untrained model to measure noise.",
+       "We compare models only <b>within a single run</b>, and every run includes a second copy of the baseline.",
+       "Greedy decoding on vLLM-TPU isn't perfectly repeatable. Two copies of the same FinQA model differed by 1.9 points, so we can't trust a small gain without a noise floor."),
+      ("Choose who writes the training answers", generate_vis(),
+       "We sampled the teacher 4 times and the student 8 times per question, using training questions only. Both write the same short format: brief reasoning, then one answer.",
+       "A weak student learns from the teacher's answers. A strong student learns from <b>its own verified answers</b>, which keep its style of reasoning.",
+       "The training answers should look like what the student will write when it serves. On MATH, the teacher's shorter solutions made a strong student worse.")],
+      merge_notes("""Step one is to check the measurements before running the experiment. Every grader passes two checks: gold answers score 100 percent and shuffled answers score almost zero. Then we serve two copies of each untrained model side by side. On FinQA the two copies differ by 1.9 points, because greedy decoding on TPU serving isn't perfectly repeatable. So every comparison in this talk comes from a single run that includes a second copy of the baseline. The gaps to the teacher are 30, 32 and 18 points. ~1.5 min.""",
+                  """Step two is choosing who writes the training answers. For a weak student, that's the teacher. We sample it four times per question at temperature 0.7, which gives 25 to 34 thousand answers per task in under 40 minutes. For a strong student, it's the student itself. We sample it eight times per question, and we don't need the teacher at all. We also train on the student's own answers as a control on every task, and on MATH that control won. Both teacher and student write the same short format: brief reasoning, then one answer. ~1.5 min."""),
+      "* BIRD gold scores 100% of the 1,530 gold queries that execute (99.7% of 1,534)")
 
-  journey(1, "Choose who writes the training answers",
-          svg(vis_w, vis_h, "".join([
-              R(0, 10, 260, 200, INK, 22), T(130, 100, "Teacher", 34, 800, "#ffffff", "middle"), T(130, 144, "8× H200", 24, 400, NILE, "middle"),
-              arrow(275, 110, 405, MUTED, 5), T(340, 88, "× 4", 24, 800, MUTED, "middle"),
-              R(420, 10, 620, 200, CARD, 22, RULE, 2), T(450, 62, "Teacher answers, T 0.7", 26, 800),
-              T(450, 106, "BIRD 33,728 · FinQA 24,436 · MATH 25,048", 25, 600, INK), T(450, 146, "26–38 minutes per task on 8 GPUs", 23, 400, MUTED),
-              T(450, 184, "for a weak student", 23, 700, TEAL),
-              R(0, 250, 260, 200, GOLD, 22), T(130, 340, "Student", 34, 800, INK, "middle"), T(130, 384, "1 v6e chip each", 24, 400, INK, "middle"),
-              arrow(275, 350, 405, MUTED, 5), T(340, 328, "× 8", 24, 800, MUTED, "middle"),
-              R(420, 250, 620, 200, CARD, 22, RULE, 2), T(450, 302, "Its own answers, T 0.7", 26, 800),
-              T(450, 346, "MATH 50,096 · the control on every task", 25, 600, INK), T(450, 386, "no teacher time", 23, 400, MUTED),
-              T(450, 424, "for a strong student", 23, 700, GOLD),
-              R(0, 500, vis_w, 120, CREAM, 20), T(26, 550, "Both write the same short format: brief reasoning, then one answer", 26, 800, DARK),
-              T(26, 592, "Non-thinking mode lets the teacher sample 4× faster than with long traces", 23, fill=INK)])),
-          "We sampled the teacher 4 times and the student 8 times per question, using training questions only.",
-          "A weak student learns from the teacher's answers. A strong student learns from <b>its own verified answers</b>, which keep its style of reasoning.",
-          "The training answers should look like what the student will write when it serves. On MATH, the teacher's shorter solutions made a strong student worse.",
-          """Step two is choosing who writes the training answers. For a weak student, that's the teacher. We sample it four times per question at temperature 0.7, which gives 25 to 34 thousand answers per task in under 40 minutes. For a strong student, it's the student itself. We sample it eight times per question, and we don't need the teacher at all. We also train on the student's own answers as a control on every task, and on MATH that control won. Both teacher and student write the same short format: brief reasoning, then one answer. ~1.5 min.""")
-
-  journey(2, "Keep only the answers the grader accepts",
-          f'<div style="display:flex;flex-direction:column;width:100%;height:100%"><div style="height:430px;width:100%">{funnel([("teacher answers", 33728, INK), ("pass the grader", 20133, DARK), ("distinct, ≤ 4 per question", 10504, DARK), ("BIRD training set", 10112, TEAL)], vis_w, 430)}</div>'
-          + f'<div style="height:200px;width:100%;margin-top:10px">{table(["Task", "Answers", "Pass the grader", "Training set"], [["FinQA, teacher", "24,436", "18,487", "6,016"], ["MATH, student", "50,096", "72.6%", "4,992"]], [34, 22, 24, 20], 23, accent=TEAL)}</div></div>',
-          "We graded every answer and kept only the correct ones, with up to four distinct answers per question. A separate audit re-checked every row and looked for overlap with the evaluation sets.",
-          "We train <b>only on verified answers</b>, and we reject any row that comes from an evaluation database, report page or problem.",
-          "The grader turned out to be the most valuable code we wrote, because 40% of the teacher's BIRD answers were wrong. The audit found <b>no leaks</b> on any task.",
-          """Step three is verification. Every answer goes through the task's grader, and we keep it only if it's correct. That threw out 40 percent of the teacher's BIRD answers and a quarter of its FinQA answers. The teacher is good, but it isn't perfect. On MATH we filter the student's own answers the same way. A separate audit re-grades every row we kept and checks for any overlap with the evaluation sets. It found no leaks on any of the three tasks. ~1.5 min.""",
-          "Bars: BIRD; table: FinQA and MATH (docs/RECIPE.md)")
-
-  journey(3, "Distil the student on one TPU host",
-          svg(vis_w, vis_h, "".join([
-              T(0, 34, "LoRA fine-tuning on TPU v6e-8", 30, 800),
-              *[R(i * 130, 62, 114, 114, DARK, 16) for i in range(8)],
-              *[R(i * 130 + 32, 94, 50, 50, "#ffffff", 7) for i in range(8)],
-              T(0, 222, "117 / 69 / 57 steps (BIRD / FinQA / MATH) · 10–27 minutes", 25, 600, MUTED),
-              T(0, 300, "Checks we ran before trusting any result", 30, 800),
-              R(0, 330, 505, 130, CARD, 18, RULE, 2), T(26, 388, "0.998", 44, 800, DARK), T(26, 432, "trainer and server agree (top-1)", 23, fill=MUTED),
-              R(535, 330, 505, 130, CARD, 18, RULE, 2), T(561, 388, "1 : 1", 44, 800, DARK), T(561, 432, "retrain gave a byte-identical model", 23, fill=MUTED),
-              T(0, 530, "rank 256 · alpha 512 · attention + MLP · batch 256 · 3 epochs", 25, fill=INK),
-              T(0, 570, "Qwen3 and Gemma 4 loaders · loss on answer tokens only", 25, fill=INK)])),
-          "We trained low-rank adapters on all eight chips of one TPU v6e-8 host, merged them into the model and exported a standard checkpoint for serving. Every task used the same settings.",
-          "We used LoRA instead of full fine-tuning because it fits on one host. Every size is a multiple of 256 to match the TPU's matrix unit.",
-          "Before you trust a result, check that the trainer and the server compute the same model. Keep adapter weights in float32, because in bf16 the optimizer's first update divides zero by zero.",
-          """Step four is distillation. We train low-rank adapters on all eight chips of one TPU host, with the same settings on every task. That's 117, 69 and 57 optimizer steps, and 10 to 27 minutes of training. Before trusting any result, we checked that the training model and the serving model agree: they pick the same top token 99.8 percent of the time on Qwen3 and 99.4 percent on Gemma. A full retrain also reproduced a byte-identical checkpoint. One lesson we learned the hard way: adapter weights have to stay in float32. ~1.5 min.""")
+  journey_pair(2, "Verify every answer, then distil on one TPU host", [
+      ("Keep only the answers the grader accepts", verify_vis(),
+       "We graded every answer and kept only the correct ones, with up to four distinct answers per question. A separate audit re-checked every row and looked for overlap with the evaluation sets.",
+       "We train <b>only on verified answers</b>, and we reject any row that comes from an evaluation database, report page or problem.",
+       "The grader turned out to be the most valuable code we wrote, because 40% of the teacher's BIRD answers were wrong. The audit found <b>no leaks</b> on any task."),
+      ("Distil the student on one TPU host", distil_vis(),
+       "We trained low-rank adapters on all eight chips of one TPU v6e-8 host, merged them into the model and exported a standard checkpoint for serving. Every task used the same settings.",
+       "We used LoRA instead of full fine-tuning because it fits on one host. Every size is a multiple of 256 to match the TPU's matrix unit.",
+       "Before you trust a result, check that the trainer and the server compute the same model. Keep adapter weights in float32, because in bf16 the optimizer's first update divides zero by zero.")],
+      merge_notes("""Step three is verification. Every answer goes through the task's grader, and we keep it only if it's correct. That threw out 40 percent of the teacher's BIRD answers and a quarter of its FinQA answers. The teacher is good, but it isn't perfect. On MATH we filter the student's own answers the same way. A separate audit re-grades every row we kept and checks for any overlap with the evaluation sets. It found no leaks on any of the three tasks. ~1.5 min.""",
+                  """Step four is distillation. We train low-rank adapters on all eight chips of one TPU host, with the same settings on every task. That's 117, 69 and 57 optimizer steps, and 10 to 27 minutes of training. Before trusting any result, we checked that the training model and the serving model agree: they pick the same top token 99.8 percent of the time on Qwen3 and 99.4 percent on Gemma. A full retrain also reproduced a byte-identical checkpoint. One lesson we learned the hard way: adapter weights have to stay in float32. ~1.5 min."""),
+      "Step 3 bars: BIRD; table: FinQA and MATH (docs/RECIPE.md)")
 
   rounds = ["KD", "1", "2", "3", "4", "5"]
   bird_mix = [(r, 100 - p8, mx, p8 - mx) for r, p8, mx in zip(rounds, (73.09, 73.11, 73.52, 73.90, 74.12, 74.34), (34.17, 32.8, 31.0, 30.2, 26.7, 27.1))]
   finqa_mix = [(r, w_, mx, rt) for r, w_, mx, rt in zip(rounds, (14.62, 14.29, 14.00, 13.70, 13.37, 13.03), (42.05, 38.48, 35.18, 31.28, 27.91, 25.96),
                                                       (43.33, 47.23, 50.83, 55.02, 58.72, 61.01))]
-  journey(4, "RL makes sometimes-right answers always right",
-          outcome_mix([("BIRD", bird_mix), ("FinQA", finqa_mix)], vis_w, vis_h),
-          "We ran six rounds of GRPO. The student answers each training question 8 times, gets a reward of 1 when the grader accepts an answer, and moves toward the better answers in each group.",
-          "The update learns only from questions with <b>mixed outcomes</b>, because all-right and all-wrong groups give it nothing to compare. A small KL penalty keeps the student close to where it started.",
-          "On FinQA, the share of questions the student always gets right grew from 43% to 61%, while the share it never gets right barely moved. On held-out data, RL added 4.0 points on BIRD, 5.8 on FinQA and 1.8 on MATH.",
-          """Step five is reinforcement learning. GRPO samples the student eight times per training question. An answer gets a reward of one if the grader accepts it, and the update pushes the student toward the better answers in each group. Only questions with mixed outcomes teach it anything. If all eight answers are right, or all eight are wrong, there's nothing to compare.
+  journey_pair(4, "Reinforce with GRPO, then serve on a single chip", [
+      ("RL makes sometimes-right answers always right", outcome_mix([("BIRD", bird_mix), ("FinQA", finqa_mix)], VW, VH, compact=True),
+       "We ran six rounds of GRPO. The student answers each training question 8 times, gets a reward of 1 when the grader accepts an answer, and moves toward the better answers in each group.",
+       "The update learns only from questions with <b>mixed outcomes</b>, because all-right and all-wrong groups give it nothing to compare. A small KL penalty keeps the student close to where it started.",
+       "On FinQA, the share of questions the student always gets right grew from 43% to 61%, while the share it never gets right barely moved. On held-out data, RL added 4.0 points on BIRD, 5.8 on FinQA and 1.8 on MATH."),
+      ("Each student runs on a single chip",
+       hbars([("Teacher", "8× H200", 1.438, INK), ("Untrained", "1 TPU v6e chip", 0.178, GRAY), ("Trained student", "1 TPU v6e chip", 0.091, CORAL)],
+             VW, VH, 1.6, 240, value_fmt="${:.3f}", bar_h=48),
+       "We served every model with the same flags, one vLLM-TPU copy per chip, and raised the load until errors appeared. Then we priced the best error-free rate.",
+       "We measure the <b>cost of each correct answer</b>, because both accuracy and throughput affect it. Tokens per second would ignore accuracy.",
+       "Answer length drives throughput. The trained BIRD student is faster than the untrained one, at 15.8 requests per second, but the MATH student's long answers make it slower than the teacher.")],
+      merge_notes("""Step five is reinforcement learning. GRPO samples the student eight times per training question. An answer gets a reward of one if the grader accepts it, and the update pushes the student toward the better answers in each group. Only questions with mixed outcomes teach it anything. If all eight answers are right, or all eight are wrong, there's nothing to compare.
 The bars sort every training question, in every round, into three groups. Teal means all eight answers were right, gold means some were right, and gray means all eight were wrong. On FinQA the teal block grows from 43 to 61 percent, and it grows by taking over the gold block. The gray block barely changes. So RL takes answers the student can sometimes reach and makes it give them every time. It doesn't teach the student questions it never solves; that's what distillation is for. On held-out data, RL is worth 4 points on BIRD, 5.8 on FinQA and 1.8 on MATH. ~2 min.""",
-          "Training pool, 8 samples per question at T 1.0, policy that produced each round's samples; BIRD all-wrong = 100 − pass@8, all-right = pass@8 − mixed")
-
-  journey(5, "Each student runs on a single chip",
-          hbars([("Teacher", "8× H200", 1.438, INK), ("Untrained", "1 TPU v6e chip", 0.178, GRAY), ("Trained student", "1 TPU v6e chip", 0.091, CORAL)],
-                vis_w, vis_h - 60, 1.6, 340, value_fmt="${:.3f}", bar_h=64),
-          "We served every model with the same flags, one vLLM-TPU copy per chip, and raised the load until errors appeared. Then we priced the best error-free rate.",
-          "We measure the <b>cost of each correct answer</b>, because both accuracy and throughput affect it. Tokens per second would ignore accuracy.",
-          "Answer length drives throughput. The trained BIRD student is faster than the untrained one, at 15.8 requests per second, but the MATH student's long answers make it slower than the teacher.",
-          """Step six is serving, and putting a price on each answer. Every model gets the same serving flags and one TPU chip per copy. We raise the load until the server starts returning errors, and we price the best rate it reached without errors. We measure cost per correct answer, because a fast wrong answer is worth nothing. On BIRD, a thousand correct answers from the trained student cost 9 cents. That's half the cost of the untrained model and a sixteenth of the teacher's. Answer length matters a lot here, as we'll see with MATH. ~1 min.""",
-          "Serving cost per 1,000 correct BIRD answers; student at the on-demand TPU v6e rate, teacher at the cheapest listed H200 rate")
+                  """Step six is serving, and putting a price on each answer. Every model gets the same serving flags and one TPU chip per copy. We raise the load until the server starts returning errors, and we price the best rate it reached without errors. We measure cost per correct answer, because a fast wrong answer is worth nothing. On BIRD, a thousand correct answers from the trained student cost 9 cents. That's half the cost of the untrained model and a sixteenth of the teacher's. Answer length matters a lot here, as we'll see with MATH. ~1 min."""),
+      ["Step 5: training pool, 8 samples per question at T 1.0, policy that produced each round's samples; BIRD all-wrong = 100 − pass@8, all-right = pass@8 − mixed",
+       "Step 6: serving cost per 1,000 correct BIRD answers; student at the on-demand TPU v6e rate, teacher at the cheapest listed H200 rate"])
 
   # ---------------- 4. results
   dark_divider(4, "What we got", "What each experiment achieved, why the recipe changed for the strong student, and why we trust the numbers.", BLUE, "Part 4: results. ~11 minutes.")
 
   def lhead(name, sub):
     return f'<div class="lh">{esc(name)}<span>{esc(sub)}</span></div>'
-  content(3, "What we got", "All three students improved",
-          box(0, 4, TOP, 50, lhead("BIRD", "SQL · +21.6 points")) +
-          box(0, 4, TOP + 60, BOT - TOP - 60, ladder([("base", "Base", 30.6), ("kd", "KD", 48.2), ("rl", "+ GRPO", 52.2)], 533, 660, 100, 60.7, True, True)) +
-          box(4, 4, TOP, 50, lhead("FinQA", "finance · +28.4 points")) +
-          box(4, 4, TOP + 60, BOT - TOP - 60, ladder([("base", "Base", 44.0), ("kd", "KD", 66.6), ("rl", "+ GRPO", 72.5)], 533, 660, 100, 75.7, True, True)) +
-          box(8, 4, TOP, 50, lhead("MATH", "Gemma · +3.5 points")) +
-          box(8, 4, TOP + 60, BOT - TOP - 60, ladder([("base", "Base", 74.9), ("self", "Self", 76.6), ("rl", "+ GRPO", 78.4)], 533, 660, 100, 92.5, True, True)),
-          """All three students improved, and every confidence interval is above zero. On BIRD, accuracy went from 30.6 to 52.2 percent, a gain of 21.6 points. On FinQA it went from 44 to 72.5 percent, a gain of 28.4 points, which is only three points short of the teacher. On MATH, Gemma went from 74.9 to 78.4 percent, a gain of 3.5 points. Look at the middle bar for MATH: it isn't trained on the teacher's data. On MATH, the best recipe trained the student on its own answers. The next few slides go through these one at a time. ~1 min.""",
-          "Each panel: one same-run evaluation; KD = teacher answers, Self = the student's own verified answers; dashed line = teacher")
+  lad_h = 392
+  sy0 = TOP + 60 + lad_h + 14
+  srh = (BOT - sy0 - 2 * 10) / 3
+  cols = [("BIRD", "SQL · +21.6 points", [("base", "Base", 30.6), ("kd", "KD", 48.2), ("rl", "+ GRPO", 52.2)], 60.7,
+           [("+17.6", "points from distillation, 95% CI [+15.2, +20.1]", TEAL), ("+4.0", "more points from GRPO, 95% CI [+2.2, +5.9]", CORAL),
+            ("72%", "of the gap to the teacher closed, for $136 of compute", CORAL)]),
+          ("FinQA", "finance · +28.4 points", [("base", "Base", 44.0), ("kd", "KD", 66.6), ("rl", "+ GRPO", 72.5)], 75.7,
+           [("+22.6", "points from distillation, 95% CI [+19.4, +25.7]", TEAL), ("+5.8", "more points from GRPO, 95% CI [+3.9, +7.8]", CORAL),
+            ("90%", "of the gap to the teacher closed, for $79 of compute", CORAL)]),
+          ("MATH", "Gemma · +3.5 points", [("base", "Base", 74.9), ("self", "Self", 76.6), ("rl", "+ GRPO", 78.4)], 92.5,
+           [("+3.5", "points from self-distillation and GRPO, 95% CI [+2.6, +4.4]", GOLD), ("+1.82", "more points from GRPO, 95% CI [+1.00, +2.66]", CORAL),
+            ("20%", "of the gap to the teacher closed, for $159 of compute", CORAL)])]
+  inner = ""
+  for c, (name, sub, groups, teacher, stats) in enumerate(cols):
+    inner += box(c * 4, 4, TOP, 50, lhead(name, sub))
+    inner += box(c * 4, 4, TOP + 60, lad_h, ladder(groups, 533, 520, 100, teacher, True, True))
+    inner += "".join(box(c * 4, 4, sy0 + i * (srh + 10), srh, srow(b, cp, a)) for i, (b, cp, a) in enumerate(stats))
+  content(3, "What we got", "All three students improved", inner,
+          merge_notes("""All three students improved, and every confidence interval is above zero. On BIRD, accuracy went from 30.6 to 52.2 percent, a gain of 21.6 points. On FinQA it went from 44 to 72.5 percent, a gain of 28.4 points, which is only three points short of the teacher. On MATH, Gemma went from 74.9 to 78.4 percent, a gain of 3.5 points. Look at the middle bar for MATH: it isn't trained on the teacher's data. On MATH, the best recipe trained the student on its own answers. The numbers under each chart split every gain into its steps. ~1 min.""",
+                      """Let's look at BIRD. On 1,534 questions over eleven databases the student never saw, accuracy went from 30.6 to 48.2 percent after distillation, and to 52.2 after GRPO. The teacher scores 60.7. Distillation gave the biggest gain, 17.6 points, and RL added four more. The final student closed 72 percent of the gap to the teacher, and producing it cost 136 dollars of compute. ~1 min.""",
+                      """FinQA was our replication. We used the same student, the same teacher, the same settings and the same six-round schedule, all fixed before the run. The only new code was the task module. On 1,147 test questions, accuracy went from 44 to 66.6 percent after distillation and to 72.5 after GRPO, 3.2 points short of the teacher. Both gains are far larger than the noise, and the final student closed 90 percent of the gap for 79 dollars. ~1 min."""),
+          ["Each panel: one same-run evaluation; KD = teacher answers, Self = the student's own verified answers; dashed line = teacher; paired differences with bootstrap 95% CIs",
+           "BIRD dev, 1,534 questions; FinQA test, 1,147 questions, settings and schedule unchanged from BIRD; MATH test, 5,000 problems"],
+          )
 
-  hs = (BOT - TOP - 2 * 30) / 3
-  content(3, "What we got", "BIRD accuracy rose from 30.6% to 52.2%",
-          box(0, 8, TOP, BOT - TOP, ladder([("base", "Untrained", 30.6), ("kd", "Distilled", 48.2), ("rl", "+ GRPO", 52.2)], 1100, 720, 75, teacher=60.7)) +
-          box(8, 4, TOP, hs, stat("+17.6", "points from distillation, 95% CI [+15.2, +20.1]", TEAL)) +
-          box(8, 4, TOP + hs + 30, hs, stat("+4.0", "more points from GRPO, 95% CI [+2.2, +5.9]", CORAL)) +
-          box(8, 4, TOP + 2 * (hs + 30), hs, stat("72%", "of the gap to the teacher closed, for $136 of compute", CORAL)),
-          """Let's look at BIRD. On 1,534 questions over eleven databases the student never saw, accuracy went from 30.6 to 48.2 percent after distillation, and to 52.2 after GRPO. The teacher scores 60.7. Distillation gave the biggest gain, 17.6 points, and RL added four more. The final student closed 72 percent of the gap to the teacher, and producing it cost 136 dollars of compute. ~1 min.""",
-          "BIRD dev, one same-run evaluation; paired differences with bootstrap 95% confidence intervals")
-
-  content(3, "What we got", "The same recipe worked on earnings reports",
-          box(0, 8, TOP, BOT - TOP, ladder([("base", "Untrained", 44.0), ("kd", "Distilled", 66.6), ("rl", "+ GRPO", 72.5)], 1100, 720, 100, teacher=75.7, inside=True)) +
-          box(8, 4, TOP, hs, stat("+22.6", "points from distillation, 95% CI [+19.4, +25.7]", TEAL)) +
-          box(8, 4, TOP + hs + 30, hs, stat("+5.8", "more points from GRPO, 95% CI [+3.9, +7.8]", CORAL)) +
-          box(8, 4, TOP + 2 * (hs + 30), hs, stat("90%", "of the gap to the teacher closed, for $79 of compute", CORAL)),
-          """FinQA was our replication. We used the same student, the same teacher, the same settings and the same six-round schedule, all fixed before the run. The only new code was the task module. On 1,147 test questions, accuracy went from 44 to 66.6 percent after distillation and to 72.5 after GRPO, 3.2 points short of the teacher. Both gains are far larger than the noise, and the final student closed 90 percent of the gap for 79 dollars. ~1 min.""",
-          "FinQA test, 1,147 questions, one same-run evaluation; settings and schedule unchanged from BIRD")
-
-  h3 = (BOT - TOP - 2 * 24) / 3
+  fh2 = 456
+  rih = (BOT - TOP - fh2 - 16 - 2 * 10) / 3
+  hb = 236
+  sy1 = TOP + 58 + hb + 12
+  sr2 = 74
   content(3, "What we got", "The control experiment tells us which recipe to use",
-          box(0, 7, TOP, BOT - TOP, forest([
+          box(0, 6, TOP, fh2, forest([
               ("BIRD", "Qwen3-1.7B, weak", 13.1, 10.7, 15.5, TEAL), ("FinQA", "Qwen3-1.7B, weak", 9.6, 6.9, 12.4, TEAL),
-              ("MATH", "Gemma 4 E2B, strong", -4.3, -5.4, -3.2, GOLD)], 1040, 720, -10, 20, 300)) +
-          box(7, 5, TOP, h3, card("What the control is", "We train the same SFT recipe on the same number of rows, using the student's own verified answers instead of the teacher's.", INK)) +
-          box(7, 5, TOP + h3 + 24, h3, card("The weak student learns more from the teacher", "The teacher's answers beat the student's own by 13.1 points on BIRD and 9.6 on FinQA.", TEAL)) +
-          box(7, 5, TOP + 2 * (h3 + 24), h3, card("The strong student learns more from itself", "On MATH, the teacher's answers score 4.3 points lower than the student's own.", GOLD)),
-          """If you remember one slide from this talk, make it this one. In every experiment we trained a control: the same recipe on the same number of rows, but with the student's own verified answers instead of the teacher's. The chart shows the teacher's result minus the control's.
+              ("MATH", "Gemma 4 E2B, strong", -4.3, -5.4, -3.2, GOLD)], 800, 456, -10, 20, 280)) +
+          "".join(box(0, 6, TOP + fh2 + 16 + i * (rih + 10), rih, runin(t, b, a)) for i, (t, b, a) in enumerate([
+              ("What the control is.", "We train the same SFT recipe on the same number of rows, using the student's own verified answers instead of the teacher's.", INK),
+              ("The weak student learns more from the teacher.", "The teacher's answers beat the student's own by 13.1 points on BIRD and 9.6 on FinQA.", TEAL),
+              ("The strong student learns more from itself.", "On MATH, the teacher's answers score 4.3 points lower than the student's own.", GOLD)])) +
+          vsep() +
+          head(6, 6, TOP, "A strong student lost accuracy copying the teacher") +
+          box(6, 6, TOP + 58, hb, hbars([("Base", "two copies: 74.90 / 74.78", 74.9, GRAY), ("Teacher answers", "4,992 rows", 72.6, TEAL),
+                                         ("Its own answers", "4,992 rows", 76.8, GOLD)], 800, hb, 100, 330, bar_h=44)) +
+          "".join(box(6, 6, sy1 + i * (sr2 + 10), sr2, srow(b, c, a)) for i, (b, c, a) in enumerate([
+              ("597 vs 1,027", "average tokens per answer. The distilled student copied the teacher's shorter solutions.", TEAL),
+              ("−3.3 / −4.1", "points lost on the two hardest levels, where short solutions hurt most", TEAL),
+              ("−10.8", "points when the teacher corrected the student's mistakes instead", INK)])) +
+          box(6, 6, sy1 + 3 * (sr2 + 10) + 2, BOT - sy1 - 3 * (sr2 + 10) - 2, learn("Gemma already reasons well in its own style. Copying the teacher's shorter style cost it accuracy, while training on its own answers improved it.", CORAL, "Lesson", cls="sm")),
+          merge_notes("""If you remember one slide from this talk, make it this one. In every experiment we trained a control: the same recipe on the same number of rows, but with the student's own verified answers instead of the teacher's. The chart shows the teacher's result minus the control's.
 For the weak student, the teacher's answers clearly win, by 13 points on BIRD and 10 on FinQA. For the strong student it goes the other way: the teacher's answers score 4.3 points lower than the student's own. One extra SFT run told us which recipe each student needed. ~1.5 min.""",
-          "Teacher-answer SFT minus self-distillation SFT, paired differences in points with bootstrap 95% CIs, same-run evaluations")
-
-  content(3, "What we got", "A strong student lost accuracy copying the teacher",
-          box(0, 7, TOP, 430, hbars([("Base", "two copies: 74.90 / 74.78", 74.9, GRAY), ("Teacher answers", "4,992 rows", 72.6, TEAL),
-                                     ("Its own answers", "4,992 rows", 76.8, GOLD)], 1040, 430, 100, 360)) +
-          box(0, 7, TOP + 454, BOT - TOP - 454, learn("Gemma already reasons well in its own style. Copying the teacher's shorter style cost it accuracy, while training on its own answers improved it.", CORAL, "Lesson")) +
-          box(7, 5, TOP, h3, stat("597 vs 1,027", "average tokens per answer. The distilled student copied the teacher's shorter solutions.", TEAL)) +
-          box(7, 5, TOP + h3 + 24, h3, stat("−3.3 / −4.1", "points lost on the two hardest levels, where short solutions hurt most", TEAL)) +
-          box(7, 5, TOP + 2 * (h3 + 24), h3, stat("−10.8", "points when the teacher corrected the student's mistakes instead", INK)),
-          """Why did the teacher's answers hurt on MATH? Gemma already reasons well, and it writes long solutions. The teacher writes much shorter ones, about 600 tokens compared with Gemma's thousand. The distilled student copied that style and lost the most on the two hardest levels. It isn't running out of room, either: it hits the length limit less often than before.
-We also tried teacher corrections, where the teacher sees the student's failed answer and writes a fix, and we train on the fixes. That was even worse, at minus 10.8 points. Training on the student's own verified answers gained about two points. ~1.5 min.""",
-          "MATH test, 5,000 problems, same-run evaluation; teacher corrections from a separate same-run evaluation")
+                      """Why did the teacher's answers hurt on MATH? Gemma already reasons well, and it writes long solutions. The teacher writes much shorter ones, about 600 tokens compared with Gemma's thousand. The distilled student copied that style and lost the most on the two hardest levels. It isn't running out of room, either: it hits the length limit less often than before.
+We also tried teacher corrections, where the teacher sees the student's failed answer and writes a fix, and we train on the fixes. That was even worse, at minus 10.8 points. Training on the student's own verified answers gained about two points. ~1.5 min."""),
+          ["Left: teacher-answer SFT minus self-distillation SFT, paired differences in points with bootstrap 95% CIs, same-run evaluations",
+           "Right: MATH test, 5,000 problems, same-run evaluation; teacher corrections from a separate same-run evaluation"],
+          also=["A strong student lost accuracy copying the teacher"])
 
   content(3, "What we got", "Counting cut-off answers as wrong made RL work",
           box(0, 5, TOP, 60, '<div class="lh" style="padding-left:0">Problems per round<span>with mixed outcomes</span></div>') +
@@ -820,25 +927,29 @@ We also tried teacher corrections, where the teacher sees the student's failed a
           """We had to make one more change before RL worked for the strong student. Gemma's most common failure is running out of room: about 15 percent of its answers hit the 2,048-token limit before giving a final answer. Our original GRPO threw those answers away, so the student's main failure never got a negative reward. We kept them, gave them a reward of zero, and trained only on the tokens the student actually wrote. That doubled the number of problems with mixed outcomes in each round, from about 600 to 1,300, and GRPO then added 1.82 points instead of 0.84. ~1.5 min.""",
           "MATH test, 5,000 problems, same-run evaluation; 6 GRPO rounds each; cut-off answers keep reward 0 and no end-of-turn token in the loss")
 
+  qh = 440
+  tr = (BOT - TOP - 58 - 400 - 12 - 2 * 10) / 3
   content(3, "What we got", "The trained student is both cheap and accurate",
-          box(0, 7, TOP, BOT - TOP, quadrant([("Teacher", 1.438, 60.7, INK, "end"), ("Untrained", 0.178, 30.6, GRAY, "start"),
-                                              ("Trained student", 0.091, 52.2, CORAL, "start")], 1040, 720)) +
-          box(7, 5, TOP, BOT - TOP, table(["Task", "Price", "× Speed", "× Accuracy", "= Cheaper"], [
+          box(0, 6, TOP, qh, quadrant([("Teacher", 1.438, 60.7, INK, "end"), ("Untrained", 0.178, 30.6, GRAY, "start"),
+                                       ("Trained student", 0.091, 52.2, CORAL, "start")], 800, 430)) +
+          box(0, 6, TOP + qh + 16, BOT - TOP - qh - 16, table(["Task", "Price", "× Speed", "× Accuracy", "= Cheaper"], [
               ["BIRD", "13.6×", "1.35×", "0.86×", "<b>15.8×</b>"], ["FinQA", "13.6×", "1.35×", "0.96×", "<b>17.5×</b>"],
-              ["MATH", "13.6×", "0.42×", "0.85×", "<b>4.8×</b>"]], [18, 18, 20, 23, 21], 25, accent=CORAL)),
-          """Here's the chart from the start of the talk again. On BIRD, the trained student landed where we wanted it, in the cheap and accurate corner. It's 15.8 times cheaper per correct answer than the teacher. The table covers all three tasks. Hardware price gives a factor of 13.6 everywhere, and throughput and accuracy decide the rest. FinQA reaches 17.5 times. MATH reaches only 4.8 times, because Gemma's long answers make one chip slower than the teacher's eight GPUs. Short answers save real money. ~1.5 min.""",
-          "Chart: BIRD. Teacher at its cheapest listed H200 rate, students at the on-demand TPU rate; cost ratio = 13.6 × throughput × accuracy")
-
-  content(3, "What we got", "Why we trust these results",
-          box(0, 8, TOP, BOT - TOP, forest([
+              ["MATH", "13.6×", "0.42×", "0.85×", "<b>4.8×</b>"]], [18, 18, 20, 23, 21], 23, accent=CORAL)) +
+          vsep() +
+          head(6, 6, TOP, "Why we trust these results") +
+          box(6, 6, TOP + 58, 400, forest([
               ("Noise", "BIRD base vs base", 0.3, -0.8, 1.4, GRAY), ("Noise", "FinQA base vs base", -1.9, -3.3, -0.5, GRAY),
               ("Noise", "MATH base vs base", -0.1, -0.9, 0.6, GRAY), ("MATH", "self + GRPO − base", 3.5, 2.6, 4.4, CORAL),
-              ("BIRD", "KD + GRPO − base", 21.6, 19.2, 24.1, CORAL), ("FinQA", "KD + GRPO − base", 28.4, 25.5, 31.5, CORAL)], 1100, 720, -5, 30)) +
-          box(8, 4, TOP, h3, card("Repeat runs agree", "Three BIRD evaluations gave +17.8, +18.1 and +17.6. Four MATH evaluations stayed between +1.3 and +1.9.", NEUTRAL)) +
-          box(8, 4, TOP + h3 + 24, h3, card("No evaluation data leaked", "A row-by-row audit found no evaluation database, report page or problem in the training data.", NEUTRAL)) +
-          box(8, 4, TOP + 2 * (h3 + 24), h3, card("The results reproduce", "A retrain produced a byte-identical model, and one script regenerates every number.", NEUTRAL)),
-          """Why should you believe these numbers? Every gain sits next to its own noise floor, which we measured in the same run with two copies of the untrained model. The SQL and finance gains are about ten times the noise. The MATH gain is small, 3.5 points, but its interval is well clear of the noise. Repeat evaluations agree within a point, the audit found no leaks, a retrain was byte-identical, and one script regenerates every number. ~1.5 min.""",
-          "Paired differences in points with bootstrap 95% CIs; each row from a same-run evaluation")
+              ("BIRD", "KD + GRPO − base", 21.6, 19.2, 24.1, CORAL), ("FinQA", "KD + GRPO − base", 28.4, 25.5, 31.5, CORAL)], 800, 440, -5, 30, 260)) +
+          "".join(box(6, 6, TOP + 58 + 400 + 12 + i * (tr + 10), tr, runin(t, b)) for i, (t, b) in enumerate([
+              ("Repeat runs agree.", "Three BIRD evaluations gave +17.8, +18.1 and +17.6. Four MATH evaluations stayed between +1.3 and +1.9."),
+              ("No evaluation data leaked.", "A row-by-row audit found no evaluation database, report page or problem in the training data."),
+              ("The results reproduce.", "A retrain produced a byte-identical model, and one script regenerates every number.")])),
+          merge_notes("""Here's the chart from the start of the talk again. On BIRD, the trained student landed where we wanted it, in the cheap and accurate corner. It's 15.8 times cheaper per correct answer than the teacher. The table covers all three tasks. Hardware price gives a factor of 13.6 everywhere, and throughput and accuracy decide the rest. FinQA reaches 17.5 times. MATH reaches only 4.8 times, because Gemma's long answers make one chip slower than the teacher's eight GPUs. Short answers save real money. ~1.5 min.""",
+                      """Why should you believe these numbers? Every gain sits next to its own noise floor, which we measured in the same run with two copies of the untrained model. The SQL and finance gains are about ten times the noise. The MATH gain is small, 3.5 points, but its interval is well clear of the noise. Repeat evaluations agree within a point, the audit found no leaks, a retrain was byte-identical, and one script regenerates every number. ~1.5 min."""),
+          ["Chart: BIRD. Teacher at its cheapest listed H200 rate, students at the on-demand TPU rate; cost ratio = 13.6 × throughput × accuracy",
+           "Right: paired differences in points with bootstrap 95% CIs; each row from a same-run evaluation"],
+          also=["Why we trust these results"])
 
   # ---------------- 5. Fred
   dark_divider(5, "Fred teaches<br>models to draw", "Fred took a different route to the same goal: a small model that does a specialist job well.", SKY,
@@ -874,6 +985,7 @@ We also tried teacher corrections, where the teacher sees the student's failed a
           """Placeholder: Fred's results and the routes side by side.""")
 
   # ---------------- closing
+  h3 = (BOT - TOP - 2 * 24) / 3
   tt_rows = [["Task", "long-horizon terminal agents; Terminal-Bench, 89 hard tasks", "single-turn SQL, finance and maths answers"],
              ["Student", "Qwen3.5-9B", "Qwen3-1.7B, Gemma 4 E2B"],
              ["Hardware", "8× B300: 2 trainer, 5 rollout, 1 eval workers", "1 TPU v6e-8 host; teacher on 8× H200"],
@@ -896,31 +1008,33 @@ But the lessons are similar. Both projects cleaned the data first: only 42 perce
             ("Distil", "Train LoRA on both data sets (rank 256, lr 1e-4, batch 256, 3 epochs) and keep the better one.", "train_tpu_vm.sh sft", BLUE),
             ("Reinforce", "Run GRPO with 8 samples at temperature 1.0, and count cut-off answers as wrong.", "build_grpo_rollouts.py --keep-truncated", CORAL),
             ("Serve and price", "Serve on vLLM-TPU with one copy per chip, then work out the cost per correct answer.", "serve_small.sh · bench_serving.py", SKY)]
-  hr = 262
-  rcards = "".join(box((i % 3) * 4, 4, TOP + (i // 3) * (hr + 24), hr,
-                       f'<div class="rstep"><div class="rstep-h"><b style="background:{DARK};color:#ffffff">{i + 1}</b>{esc(n)}</div>'
+  sh2, tk = 132, 176
+  ry = TOP + sh2 + 12 + tk + 12
+  choose_h = 76
+  rch = BOT - ry - 58 - 12 - choose_h
+  rcards = "".join(box(i * 2, 2, ry + 58, rch,
+                       f'<div class="rstep sm"><div class="rstep-h"><b style="background:{DARK};color:#ffffff">{i + 1}</b>{esc(n)}</div>'
                        f'<div class="rstep-d">{esc(d)}</div><div class="rstep-s">{esc(sc)}</div></div>')
                    for i, (n, d, sc, c) in enumerate(rsteps))
-  content(4, "Try it yourself", "How to run this recipe on your own task",
-          rcards +
-          box(0, 12, TOP + 2 * (hr + 24), BOT - TOP - 2 * (hr + 24),
-              learn("Train on the teacher's answers and on the student's own answers side by side. If the teacher's answers win, use KD + GRPO. If the student's own answers win, use self-distillation + GRPO, which needs no teacher time.", TEAL, "How to choose the recipe")),
-          """Here's the recipe, so you can try it on your own task. Measure the gap and the noise with one prompt. Generate two training sets, one from the teacher and one from the student itself. Keep only the answers your grader accepts, and check for leaks. Distil both sets with the same LoRA settings and keep the better one. That one comparison tells you whether your student is weak or strong. Then run GRPO with the grader as the reward, and count cut-off answers as wrong. Finally, serve on single chips and work out the price of a correct answer.
-The code you write is one task module. It loads the questions, builds a versioned prompt, extracts the answer and grades it, with gold and shuffled checks. We added FinQA and MATH exactly this way. ~2 min.""",
-          "Code, settings and commands: github.com/jawadaminGOOG/tpu-distil (README recipe, docs/RECIPE.md)")
-
   content(4, "Takeaways", "What we learned",
-          box(0, 4, TOP, 380, stat('<span style="font-size:54px">+22 / +28 / +3.5</span>', "points gained on SQL, finance and maths by students of about 2B parameters", CORAL)) +
-          box(4, 4, TOP, 380, stat("4.8–17.5×", "cheaper per correct answer than the 552B teacher", DARK)) +
-          box(8, 4, TOP, 380, stat("$79–$159", "of compute to produce each student on one TPU host", INK)) +
-          box(0, 12, TOP + 420, BOT - TOP - 420, '<div class="take">'
+          box(0, 4, TOP, sh2, stat('+22 / +28 / +3.5', "points gained on SQL, finance and maths by students of about 2B parameters", CORAL, cls="sm")) +
+          box(4, 4, TOP, sh2, stat("4.8–17.5×", "cheaper per correct answer than the 552B teacher", DARK, cls="sm")) +
+          box(8, 4, TOP, sh2, stat("$79–$159", "of compute to produce each student on one TPU host", INK, cls="sm")) +
+          box(0, 12, TOP + sh2 + 12, tk, '<div class="take sm">'
               '<div><b>If the student is weak, distil the teacher.</b> The teacher\'s verified answers gave most of the gain.</div>'
               '<div><b>If the student is strong, let it learn from itself.</b> Its own verified answers beat the teacher\'s.</div>'
               '<div><b>Then add RL.</b> Make sure the student\'s main failure gets a negative reward.</div>'
-              '<div><b>Measure carefully.</b> Compare models in one run, with a control and a noise floor, and price each correct answer.</div></div>'),
-          """To wrap up: we used one pipeline on three tasks with two students. A 1.7-billion-parameter student gained 22 points on SQL and 28 on finance, and a strong Gemma student gained 3.5 points on competition maths. The students are 4.8 to 17.5 times cheaper per correct answer than the 552-billion-parameter teacher, and each one cost 79 to 159 dollars of compute to produce.
-If your student is weak, distil the teacher. If it's strong, let it learn from its own answers. Then add RL, and make sure the student's main failure gets a negative reward. And measure carefully. Thank you; I'm happy to take questions. ~1 min.""",
-          "Code and reports: github.com/jawadaminGOOG/tpu-distil")
+              '<div><b>Measure carefully.</b> Compare models in one run, with a control and a noise floor, and price each correct answer.</div></div>') +
+          head(0, 12, ry, "How to run this recipe on your own task", "github.com/jawadaminGOOG/tpu-distil") +
+          rcards +
+          box(0, 12, BOT - choose_h, choose_h, runin("How to choose the recipe.", "Train on the teacher's answers and on the student's own answers side by side. If the teacher's answers win, use KD + GRPO. If the student's own answers win, use self-distillation + GRPO, which needs no teacher time.", TEAL)),
+          merge_notes("""To wrap up: we used one pipeline on three tasks with two students. A 1.7-billion-parameter student gained 22 points on SQL and 28 on finance, and a strong Gemma student gained 3.5 points on competition maths. The students are 4.8 to 17.5 times cheaper per correct answer than the 552-billion-parameter teacher, and each one cost 79 to 159 dollars of compute to produce.
+If your student is weak, distil the teacher. If it's strong, let it learn from its own answers. Then add RL, and make sure the student's main failure gets a negative reward. And measure carefully. ~1 min.""",
+                      """Here's the recipe, so you can try it on your own task. Measure the gap and the noise with one prompt. Generate two training sets, one from the teacher and one from the student itself. Keep only the answers your grader accepts, and check for leaks. Distil both sets with the same LoRA settings and keep the better one. That one comparison tells you whether your student is weak or strong. Then run GRPO with the grader as the reward, and count cut-off answers as wrong. Finally, serve on single chips and work out the price of a correct answer.
+The code you write is one task module. It loads the questions, builds a versioned prompt, extracts the answer and grades it, with gold and shuffled checks. We added FinQA and MATH exactly this way.
+Thank you; I'm happy to take questions. ~2 min."""),
+          "Code, settings and commands: github.com/jawadaminGOOG/tpu-distil (README recipe, docs/RECIPE.md)",
+          also=["How to run this recipe on your own task"])
 
   build_appendix()
 
@@ -1156,7 +1270,7 @@ def build_appendix():
            "These are the operational problems we hit and how the pipeline handles them.", "docs/RECIPE.md, problems and fixes")
 
   # ---- results
-  appendix(3, "A21", "BIRD accuracy rose", "All BIRD comparisons and training-data options",
+  appendix(3, "A21", "All three students improved", "All BIRD comparisons and training-data options",
            box(0, 7, TOP, H, table(["BIRD dev, same run", "Δ points [95% CI]", "Better / worse"], [
                ["KD + GRPO − base", "<b>+21.6</b> [+19.2, +24.1]", "387 / 55"],
                ["KD − base", "<b>+17.6</b> [+15.2, +20.1]", "334 / 64"],
@@ -1170,7 +1284,7 @@ def build_appendix():
                ["Base", "30.6%"]], [70, 30], 23, accent=TEAL)),
            "Every BIRD comparison, with per-question win and loss counts, and the training-data options. CORR beat self-distillation by only 1.5 points [−1.0, +3.9].", "README")
 
-  appendix(3, "A22", "worked on earnings reports", "All FinQA comparisons and the control",
+  appendix(3, "A22", "All three students improved", "All FinQA comparisons and the control",
            box(0, 7, TOP, H, table(["FinQA test, same run", "Δ points [95% CI]", "Better / worse"], [
                ["KD + GRPO − base", "<b>+28.4</b> [+25.5, +31.5]", "367 / 41"],
                ["KD − base", "<b>+22.6</b> [+19.4, +25.7]", "321 / 62"],
@@ -1298,7 +1412,7 @@ def build_appendix():
 # ------------------------------------------------------------------ page
 
 CSS = """
-@font-face { font-family: 'Caprasimo'; src: url(data:font/ttf;base64,__CAP__) format('truetype'); }
+@font-face { font-family: 'Inter Tight'; src: url(data:font/ttf;base64,__DISP__) format('truetype'); font-weight: 100 900; }
 @font-face { font-family: 'Figtree'; src: url(data:font/ttf;base64,__FIG__) format('truetype'); font-weight: 300 900; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
@@ -1310,26 +1424,26 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .box { position: absolute; overflow: hidden; }
 .box > svg { display: block; }
 .box > svg:not(.bare), .vis svg:not(.bare) { background: __CARD__; border-radius: 22px; padding: 18px 24px; }
-.box > svg:not(.bare), .vis svg:not(.bare), .card, .stat, .learn, .panel, .tbl, .dec, .lesson, .rstep, .task, .agenda, .q, .factor, .cmp, .sh-r, .take, .layer, .formula { box-shadow: inset 0 0 0 2px __RULE__; }
+.box > svg:not(.bare), .vis svg:not(.bare), .card, .stat, .learn, .panel, .tbl, .dec, .lesson, .rstep, .task, .agenda, .q, .factor, .cmp, .sh-r, .take, .layer, .formula, .srow, .ri, .pr { box-shadow: inset 0 0 0 2px __RULE__; }
 .kicker { position: absolute; font-size: 24px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; display: flex; align-items: center; gap: 14px; }
 .dot { width: 18px; height: 18px; border-radius: 50%; display: inline-block; }
-.title { position: absolute; margin: 0; font-family: 'Caprasimo', Georgia, serif; font-weight: 400; font-size: 62px; line-height: 1.1; white-space: nowrap; overflow: hidden; color: __DARK__; }
+.title { position: absolute; margin: 0; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 62px; line-height: 1.1; white-space: nowrap; overflow: hidden; color: __DARK__; }
 .track { position: absolute; top: 80px; width: 40px; height: 8px; border-radius: 4px; }
 .source { position: absolute; top: 1004px; font-size: 20px; color: __SOURCE__; white-space: nowrap; overflow: hidden; }
-.hero { position: absolute; margin: 0; font-family: 'Caprasimo', Georgia, serif; font-weight: 400; font-size: 96px; line-height: 1.04; color: __CREAM__; }
-.div-title { position: absolute; margin: 0; font-family: 'Caprasimo', Georgia, serif; font-weight: 400; font-size: 120px; line-height: 1.0; }
+.hero { position: absolute; margin: 0; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 96px; line-height: 1.04; color: __CREAM__; }
+.div-title { position: absolute; margin: 0; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 120px; line-height: 1.0; }
 .div-sub { position: absolute; font-size: 36px; line-height: 1.35; }
 .author { position: absolute; font-size: 30px; line-height: 1.5; }
-.bignum { position: absolute; font-family: 'Caprasimo', Georgia, serif; font-size: 300px; line-height: 1; color: transparent; }
+.bignum { position: absolute; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 300px; line-height: 1; color: transparent; }
 .circle { position: absolute; border-radius: 50%; }
-.statement { position: absolute; font-family: 'Caprasimo', Georgia, serif; font-size: 84px; line-height: 1.12; }
+.statement { position: absolute; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 84px; line-height: 1.12; }
 .agenda { position: absolute; overflow: hidden; background: __CARD__; border-radius: 26px; padding: 40px 34px; }
-.ag-n { font-family: 'Caprasimo', Georgia, serif; font-size: 76px; line-height: 1; }
-.ag-t { font-family: 'Caprasimo', Georgia, serif; font-size: 40px; margin: 44px 0 22px; line-height: 1.1; }
+.ag-n { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 76px; line-height: 1; }
+.ag-t { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 40px; margin: 44px 0 22px; line-height: 1.1; }
 .ag-m { position: absolute; left: 34px; bottom: 34px; font-size: 24px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: __MUTED__; }
 .ag-d { font-size: 30px; line-height: 1.42; color: __MUTED__; }
 .card { background: __CARD__; border-radius: 22px; padding: 28px 32px; height: 100%; position: relative; }
-.card-t { font-family: 'Caprasimo', Georgia, serif; font-size: 34px; line-height: 1.15; margin-bottom: 14px; }
+.card-t { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 34px; line-height: 1.15; margin-bottom: 14px; }
 .tag + .card-t { padding-right: 150px; }
 .card-b { font-size: 26px; line-height: 1.42; }
 .tag { position: absolute; top: 28px; right: 26px; font-size: 18px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 6px 14px; border-radius: 20px; }
@@ -1337,9 +1451,9 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .learn-l { font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
 .learn-b { font-size: 28px; line-height: 1.42; }
 .stat { background: __CARD__; border-radius: 22px; padding: 26px 32px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-.stat-big { font-family: 'Caprasimo', Georgia, serif; font-size: 70px; line-height: 1.05; white-space: nowrap; }
+.stat-big { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 70px; line-height: 1.05; white-space: nowrap; }
 .stat-cap { font-size: 25px; line-height: 1.35; color: __MUTED__; margin-top: 12px; }
-.vs { font-family: 'Caprasimo', Georgia, serif; font-size: 80px; color: __DARK__; height: 100%; display: flex; align-items: center; justify-content: center; }
+.vs { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 80px; color: __DARK__; height: 100%; display: flex; align-items: center; justify-content: center; }
 .q { background: __CARD__; border-radius: 18px; padding: 24px 30px; height: 100%; font-size: 31px; line-height: 1.35; font-weight: 600; }
 .q span { display: block; font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __MUTED__; margin-bottom: 8px; }
 .code { background: __DARK__; border-radius: 18px; padding: 22px 30px; height: 100%; }
@@ -1347,7 +1461,7 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .code pre { margin: 0; color: __CREAM__; font: 28px/1.5 'DejaVu Sans Mono', monospace; white-space: pre; }
 .dec { background: __CARD__; border-radius: 22px; padding: 28px 32px; height: 100%; }
 .dec-k { font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __MUTED__; }
-.dec-c { font-family: 'Caprasimo', Georgia, serif; font-size: 40px; line-height: 1.1; margin: 14px 0 6px; }
+.dec-c { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 40px; line-height: 1.1; margin: 14px 0 6px; }
 .dec-o { font-size: 23px; color: __MUTED__; font-style: italic; margin-bottom: 16px; }
 .dec-w { font-size: 26px; line-height: 1.4; }
 .step { position: absolute; height: 58px; border-radius: 29px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 600; }
@@ -1357,15 +1471,15 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .vis { display: flex; align-items: center; justify-content: center; }
 .lesson { background: __CARD__; border-radius: 22px; padding: 30px 32px; height: 100%; }
 .lesson-n { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 800; }
-.lesson-k { font-family: 'Caprasimo', Georgia, serif; font-size: 40px; margin: 22px 0 10px; }
+.lesson-k { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 40px; margin: 22px 0 10px; }
 .lesson-t { font-size: 27px; line-height: 1.4; }
 .factor { background: __CARD__; border-radius: 22px; padding: 28px 32px; height: 100%; }
-.f-t { font-family: 'Caprasimo', Georgia, serif; font-size: 32px; margin-bottom: 14px; }
+.f-t { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 32px; margin-bottom: 14px; }
 .f-r { display: flex; justify-content: space-between; align-items: baseline; font-size: 26px; padding: 14px 0; border-bottom: 2px solid __RULE__; }
 .f-r b { font-size: 30px; }
 .f-n { font-size: 20px; color: __MUTED__; margin-top: 16px; line-height: 1.4; }
 .ph { border: 4px dashed __SKY__; border-radius: 24px; height: 100%; padding: 34px; background: __CARD__; display: flex; flex-direction: column; justify-content: center; }
-.ph-l { font-family: 'Caprasimo', Georgia, serif; font-size: 36px; margin-bottom: 18px; }
+.ph-l { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 36px; margin-bottom: 18px; }
 .ph-i { font-size: 26px; color: __MUTED__; line-height: 1.6; }
 .ph-n { margin-top: 18px; font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __BLUE__; }
 .cmp { background: __CARD__; border-radius: 22px; padding: 22px 30px; height: 100%; display: flex; flex-direction: column; justify-content: center; }
@@ -1373,7 +1487,7 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .cmp-h b { font-size: 20px; letter-spacing: .08em; text-transform: uppercase; }
 .cmp-r span { color: __MUTED__; } .cmp-r i { color: __BLUE__; font-style: normal; font-weight: 700; }
 .field { background: __INK__; color: __PAPER__; border-radius: 24px; padding: 36px 36px; height: 100%; }
-.field-h { font-family: 'Caprasimo', Georgia, serif; font-size: 42px; margin-bottom: 26px; color: __GOLD__; }
+.field-h { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 42px; margin-bottom: 26px; color: __GOLD__; }
 .field-i { font-size: 27px; line-height: 1.45; margin-bottom: 28px; }
 .shared { display: flex; flex-direction: column; gap: 20px; height: 100%; }
 .sh-r { background: __CARD__; border-radius: 20px; padding: 18px 26px; display: flex; gap: 22px; align-items: center; flex: 1; }
@@ -1393,30 +1507,66 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .tbl tr.hl td { font-weight: 800; }
 .mono { font-family: 'DejaVu Sans Mono', monospace; font-size: .86em; }
 .layer { background: __CARD__; border-radius: 20px; height: 100%; display: flex; align-items: center; gap: 24px; padding: 0 28px; border-left: 12px solid; }
-.layer-l { width: 270px; flex: none; font-family: 'Caprasimo', Georgia, serif; font-size: 28px; line-height: 1.15; }
-.layer-l span { display: block; font-family: 'Figtree', Arial, sans-serif; font-size: 19px; color: __MUTED__; margin-top: 4px; }
+.layer-l { width: 270px; flex: none; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 28px; line-height: 1.15; }
+.layer-l span { display: block; font-family: 'Figtree', Arial, sans-serif; font-weight: 400; letter-spacing: 0; font-size: 19px; color: __MUTED__; margin-top: 4px; }
 .pills { display: flex; flex-wrap: wrap; gap: 10px; }
 .pill { font-size: 23px; font-weight: 700; padding: 8px 18px; border-radius: 24px; background: __PAPER__; border: 2px solid __RULE__; }
 .rstep { background: __CARD__; border-radius: 22px; padding: 24px 28px; height: 100%; display: flex; flex-direction: column; }
-.rstep-h { display: flex; align-items: center; gap: 16px; font-family: 'Caprasimo', Georgia, serif; font-size: 34px; margin-bottom: 12px; }
+.rstep-h { display: flex; align-items: center; gap: 16px; font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 34px; margin-bottom: 12px; }
 .rstep-h b { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Figtree', Arial, sans-serif; font-size: 25px; }
 .rstep-d { font-size: 24px; line-height: 1.38; flex: 1; }
 .rstep-s { font: 19px/1.4 'DejaVu Sans Mono', monospace; color: __MUTED__; border-top: 2px solid __RULE__; padding-top: 10px; }
-.lh { font-family: 'Caprasimo', Georgia, serif; font-size: 32px; padding-left: 80px; }
-.lh span { font-family: 'Figtree', Arial, sans-serif; font-size: 22px; color: __SOURCE__; margin-left: 10px; }
+.lh { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 32px; padding-left: 80px; }
+.lh span { font-family: 'Figtree', Arial, sans-serif; font-weight: 400; letter-spacing: 0; font-size: 22px; color: __SOURCE__; margin-left: 10px; }
 .formula { background: __INK__; color: __PAPER__; border-radius: 22px; height: 100%; padding: 28px 36px; display: flex; flex-direction: column; justify-content: center; }
-.formula .fx { font-family: 'Caprasimo', Georgia, serif; font-size: 40px; line-height: 1.3; }
+.formula .fx { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 40px; line-height: 1.3; }
 .formula .fn { font-size: 23px; color: __SKY__; margin-top: 14px; line-height: 1.4; }
 .amap { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 40px; height: 100%; align-content: start; }
 .amap div { font-size: 21px; line-height: 1.3; padding: 7px 0; border-bottom: 2px solid __RULE__; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .amap b { display: inline-block; min-width: 54px; padding: 2px 8px; margin-right: 10px; border-radius: 10px; text-align: center; font-size: 18px; }
 .amap i { font-style: normal; color: __MUTED__; margin-left: 6px; }
 .task { background: __CARD__; border-radius: 22px; padding: 26px 30px; height: 100%; display: flex; flex-direction: column; }
-.task-h { font-family: 'Caprasimo', Georgia, serif; font-size: 44px; line-height: 1; margin-bottom: 14px; }
+.task-h { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 44px; line-height: 1; margin-bottom: 14px; }
 .task-h span { display: block; font-family: 'Figtree', Arial, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __MUTED__; margin-top: 10px; }
 .task-r { font-size: 23px; line-height: 1.32; padding: 11px 0; border-top: 2px solid __RULE__; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .task-r > span { font-size: 17px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: __MUTED__; margin-bottom: 3px; }
 .cmp4 .cmp-h, .cmp4 .cmp-r { grid-template-columns: 22% 28% 22% 28%; }
+.hh { height: 100%; display: flex; align-items: flex-end; gap: 14px; padding-bottom: 10px; border-bottom: 3px solid __RULE__; white-space: nowrap;
+  font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 32px; line-height: 1.1; color: __DARK__; }
+.hh span { font-family: 'Figtree', Arial, sans-serif; font-weight: 400; letter-spacing: 0; font-size: 21px; color: __MUTED__; }
+.vsep { position: absolute; width: 2px; background: __RULE__; }
+.srow { background: __CARD__; border-radius: 18px; padding: 10px 24px; height: 100%; display: flex; align-items: center; gap: 20px; }
+.srow-b { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 40px; line-height: 1; white-space: nowrap; flex: none; min-width: 110px; }
+.srow-c { font-size: 20px; line-height: 1.3; color: __MUTED__; }
+.ri { background: __CARD__; border-radius: 16px; padding: 8px 24px; height: 100%; display: flex; align-items: center; font-size: 20px; line-height: 1.34; }
+.ri b { font-weight: 800; }
+.sh { height: 100%; display: flex; align-items: center; gap: 14px; border-bottom: 3px solid __RULE__; padding-bottom: 6px; }
+.sh b { width: 38px; height: 38px; border-radius: 50%; background: __DARK__; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; flex: none; }
+.sh i { font-style: normal; font-size: 18px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __MUTED__; }
+.sh span { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 30px; color: __DARK__; white-space: nowrap; }
+.pr { background: __CARD__; border-radius: 16px; padding: 6px 22px; height: 100%; display: flex; align-items: center; font-size: 20px; line-height: 1.32; }
+.pr .prl { font-size: 15px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-right: 10px; }
+.card.sm { padding: 18px 24px; } .card.sm .card-t { font-size: 26px; margin-bottom: 8px; } .card.sm .card-b { font-size: 21px; line-height: 1.38; }
+.learn.sm { padding: 16px 26px; } .learn.sm .learn-l { font-size: 17px; margin-bottom: 6px; } .learn.sm .learn-b { font-size: 21px; line-height: 1.38; }
+.stat.sm { padding: 14px 26px; } .stat.sm .stat-big { font-size: 46px; } .stat.sm .stat-cap { font-size: 20px; margin-top: 6px; }
+.code.sm { padding: 14px 26px; } .code.sm .code-l { font-size: 17px; margin-bottom: 8px; } .code.sm pre { font-size: 23px; line-height: 1.42; }
+.q.sm { font-size: 26px; padding: 16px 26px; } .q.sm span { font-size: 17px; margin-bottom: 4px; }
+.tbl.sm { padding: 6px 22px; } .tbl.sm th { padding: 4px 10px 4px 0; } .tbl.sm td { padding: 4px 10px 4px 0; }
+.task.sm { padding: 18px 24px; } .task.sm .task-h { font-size: 34px; margin-bottom: 4px; display: flex; align-items: baseline; gap: 14px; }
+.task.sm .task-h span { display: inline; margin-top: 0; font-size: 17px; }
+.task.sm .task-r { display: block; font-size: 20px; line-height: 1.3; padding: 7px 0; }
+.task.sm .task-r > span { display: inline; font-size: 14px; margin-right: 10px; } .task.sm .task-r > div { display: inline; }
+.layer.sm { gap: 18px; } .layer.sm .layer-l { font-size: 24px; width: 230px; } .layer.sm .layer-l span { font-size: 17px; }
+.layer.sm .pill { font-size: 19px; padding: 5px 14px; } .layer.sm .pills { gap: 8px; }
+.take.sm { padding: 20px 34px; gap: 14px 44px; } .take.sm div { font-size: 22px; line-height: 1.32; }
+.rstep.sm { padding: 16px 18px; } .rstep.sm .rstep-h { font-size: 22px; gap: 10px; margin-bottom: 8px; line-height: 1.1; }
+.rstep.sm .rstep-h b { width: 34px; height: 34px; font-size: 17px; flex: none; } .rstep.sm .rstep-d { font-size: 18px; line-height: 1.32; }
+.rstep.sm .rstep-s { font-size: 14px; padding-top: 6px; }
+.bet { background: __DARK__; color: __CREAM__; border-radius: 22px; height: 100%; padding: 22px 34px; display: flex; flex-direction: column; justify-content: center; }
+.bet-k { font-size: 20px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
+.bet-s { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 36px; line-height: 1.15; margin: 10px 0 10px; }
+.bet-b { font-size: 23px; line-height: 1.35; }
+.source.two { top: 990px; font-size: 19px; line-height: 1.3; }
 .notes { display: none; }
 #notes-panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 34vh; overflow: auto; background: #ffffff; color: #111;
   font: 18px/1.5 Figtree, Arial, sans-serif; padding: 16px 28px; border-top: 4px solid __CORAL__; display: none; z-index: 10; white-space: pre-wrap; }
@@ -1462,7 +1612,7 @@ def page(fonts: Path) -> str:
                "__CORAL__": CORAL, "__GOLD__": GOLD, "__SKY__": SKY, "__DARK__": DARK, "__CREAM__": CREAM, "__BLUE__": BLUE,
                "__SOURCE__": SOURCE}.items():
     css = css.replace(k, v)
-  css = css.replace("__CAP__", base64.b64encode((fonts / "Caprasimo-Regular.ttf").read_bytes()).decode())
+  css = css.replace("__DISP__", base64.b64encode((fonts / "InterTight[wght].ttf").read_bytes()).decode())
   css = css.replace("__FIG__", base64.b64encode((fonts / "Figtree[wght].ttf").read_bytes()).decode())
   secs = []
   for i, (body, notes, theme) in enumerate(SLIDES, 1):
