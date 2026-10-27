@@ -43,7 +43,8 @@ CARD = "#ffffff"      # White
 RULE = "#d1b0a7"      # Fawn: rules, gridlines, inactive progress bars
 ARM = {"base": GRAY, "kd": TEAL, "rl": CORAL, "self": GOLD, "corr": SKY, "teacher": INK}
 ON = {GRAY: INK, TEAL: "#ffffff", CORAL: "#ffffff", GOLD: INK, SKY: INK, INK: "#ffffff", BLUE: "#ffffff", PAPER: INK, PINK: INK}
-CH_COLOR = [CORAL, GOLD, TEAL, BLUE, SKY]
+CH_COLOR = [CORAL, GOLD, TEAL, BLUE, SKY]   # one accent per talk part, as on its divider
+STEP_COLOR = [BLUE, GOLD, SKY, TEAL, CORAL, DARK]   # Measure, Generate, Verify, Distil (KD), Reinforce (GRPO), Serve (the TPU chip)
 NEUTRAL = RULE        # top edge of a card that stands for no particular model
 ON = {**ON, DARK: "#ffffff", RULE: INK}
 ON_DARK = {TEAL: "#b5decc", BLUE: SKY, SKY: PINK}   # Turquoise Green, lavender, pink   # lighter stand-ins where an accent sits on the aubergine
@@ -115,7 +116,7 @@ def chapter_track(ch: int) -> str:
   out = []
   x = W - ML - 5 * 46 + 6
   for i in range(5):
-    col = DARK if i == ch else RULE
+    col = CH_COLOR[ch] if i == ch else RULE
     out.append(f'<div class="track" style="left:{x + i * 46}px;background:{col}"></div>')
   return "".join(out)
 
@@ -142,8 +143,9 @@ def source_line(source) -> str:
 
 def content(ch, kicker, title, inner, notes, source="", also=()):
   """A content slide. `also` names the part headers on it, so appendix links can target either part."""
-  col = DARK
+  col = CH_COLOR[ch]
   src = source_line(source)
+  inner = inner.replace('<div class="hh">', f'<div class="hh" style="border-bottom-color:{col}">')
   add(f'''{chapter_track(ch)}
 <div class="kicker" style="left:{ML}px;top:70px"><span class="dot" style="background:{col}"></span>{esc(kicker)}</div>
 <h2 class="title" style="left:{ML}px;top:104px;width:{CW}px">{title}</h2>
@@ -449,8 +451,7 @@ def flow_svg(steps, w, h):
   n = len(steps)
   gap = 46
   bw = (w - gap * (n - 1)) / n
-  for i, (name, l1, l2, _) in enumerate(steps):
-    col = DARK
+  for i, (name, l1, l2, col) in enumerate(steps):
     x = i * (bw + gap)
     o.append(R(x, 4, bw, h - 8, CARD, 22, RULE, 2))
     o.append(R(x + 24, 4, bw - 48, 10, col, 5))
@@ -570,7 +571,9 @@ def runin(title, body, accent=None):
 
 def step_head(i, top, title):
   names = ["Measure", "Generate", "Verify", "Distil", "Reinforce", "Serve"]
-  return box(0, 12, top, 46, f'<div class="sh"><b>{i + 1}</b><i>{names[i]}</i><span>{esc(title)}</span></div>')
+  c = STEP_COLOR[i]
+  return box(0, 12, top, 46, f'<div class="sh" style="border-bottom-color:{c}"><b style="background:{c};color:{ON.get(c, INK)}">{i + 1}</b>'
+                             f'<i>{names[i]}</i><span>{esc(title)}</span></div>')
 
 
 def journey_pair(i, title, steps, notes, source=""):
@@ -597,7 +600,7 @@ def measure_vis():
   o = [T(0, 22, "Is the grader right?", 21, 800), T(70, 54, "gold answers", 16, 700, MUTED), T(180, 54, "shuffled answers", 16, 700, MUTED)]
   for i, (k, g, s_) in enumerate([("BIRD", "100%*", "0.2%"), ("FinQA", "100%", "0.6%"), ("MATH", "100%", "0.0%")]):
     y = 88 + i * 32
-    o += [T(0, y, k, 19, 800), T(70, y, g, 19, 800, DARK), T(180, y, s_, 19, 800, DARK)]
+    o += [T(0, y, k, 19, 800), T(70, y, g, 19, 800, BLUE), T(180, y, s_, 19, 800, BLUE)]
   o += [T(330, 22, "How much does serving noise", 21, 800), T(330, 46, "move the score?", 21, 800), Lf(ax, 62, ax, 160, INK, 2)]
   for i, (k, e, l, u) in enumerate([("BIRD", 0.3, -0.8, 1.4), ("FinQA", -1.9, -3.3, -0.5), ("MATH", -0.12, -0.88, 0.62)]):
     y = 80 + i * 32
@@ -624,7 +627,7 @@ def generate_vis():
 
 
 def verify_vis():
-  stages = [("teacher answers", 33728, INK), ("pass the grader", 20133, DARK), ("distinct, ≤ 4 per question", 10504, DARK), ("BIRD training set", 10112, TEAL)]
+  stages = [("teacher answers", 33728, INK), ("pass the grader", 20133, BLUE), ("distinct, ≤ 4 per question", 10504, SKY), ("BIRD training set", 10112, TEAL)]
   o = []
   for i, (name, v, col) in enumerate(stages):
     y = i * 34
@@ -646,8 +649,8 @@ def distil_vis():
        *[R(i * 56, 34, 44, 44, DARK, 10) for i in range(8)], *[R(i * 56 + 13, 47, 18, 18, "#ffffff", 4) for i in range(8)],
        T(0, 104, "117 / 69 / 57 steps (BIRD / FinQA / MATH) · 10–27 minutes", 17, 600, MUTED),
        T(0, 136, "Checks we ran before trusting any result", 20, 800),
-       R(0, 148, 310, 64, CARD, 12, RULE, 2), T(16, 180, "0.998", 26, 800, DARK), T(16, 202, "trainer and server agree (top-1)", 15, fill=MUTED),
-       R(330, 148, 310, 64, CARD, 12, RULE, 2), T(346, 180, "1 : 1", 26, 800, DARK), T(346, 202, "retrain gave a byte-identical model", 15, fill=MUTED),
+       R(0, 148, 310, 64, CARD, 12, RULE, 2), T(16, 180, "0.998", 26, 800, TEAL), T(16, 202, "trainer and server agree (top-1)", 15, fill=MUTED),
+       R(330, 148, 310, 64, CARD, 12, RULE, 2), T(346, 180, "1 : 1", 26, 800, TEAL), T(346, 202, "retrain gave a byte-identical model", 15, fill=MUTED),
        T(0, 236, "rank 256 · alpha 512 · attention + MLP · batch 256 · 3 epochs", 17, fill=INK),
        T(0, 260, "Qwen3 and Gemma 4 loaders · loss on answer tokens only", 17, fill=INK)]
   return svg(VW, VH, "".join(o))
@@ -676,8 +679,8 @@ After that, Fred will show his experiment, which took a different route: teachin
            ("Fred's experiment", "How Fred taught models to draw", 7)]
   for i, (t, d, mins) in enumerate(items):
     x = ML + i * (pw + 32)
-    num_col = DARK
-    agenda.append(f'''<div class="agenda" style="left:{x:.1f}px;top:{TOP}px;width:{pw:.1f}px;height:{BOT - TOP}px;border-top:14px solid {DARK}">
+    num_col = DARK if CH_COLOR[i] == SKY else CH_COLOR[i]   # lavender is too pale for text on white
+    agenda.append(f'''<div class="agenda" style="left:{x:.1f}px;top:{TOP}px;width:{pw:.1f}px;height:{BOT - TOP}px;border-top:14px solid {CH_COLOR[i]}">
 <div class="ag-n" style="color:{num_col}">{i + 1:02d}</div><div class="ag-t">{esc(t)}</div><div class="ag-d">{esc(d)}</div><div class="ag-m">~{mins} min</div></div>''')
   add(f'''<div class="kicker" style="left:{ML}px;top:70px"><span class="dot" style="background:{CORAL}"></span>Agenda</div>
 <h2 class="title" style="left:{ML}px;top:104px;width:{CW}px">What we'll cover</h2>{"".join(agenda)}''',
@@ -692,7 +695,7 @@ After that, Fred will show his experiment, which took a different route: teachin
       *[R(20 + (i % 4) * 84, 6 + (i // 4) * 84, 70, 70, INK, 12) for i in range(8)],
       *[R(20 + (i % 4) * 84 + 20, 6 + (i // 4) * 84 + 20, 30, 30, "#ffffff", 5) for i in range(8)],
       T(181, 214, "8× H200 for one teacher replica", 22, 700, INK, "middle"),
-      T(450, 112, "vs", 64, 700, DARK, "middle", 'font-family="Inter Tight, Figtree, Arial, sans-serif"'),
+      T(450, 112, "vs", 64, 700, CORAL, "middle", 'font-family="Inter Tight, Figtree, Arial, sans-serif"'),
       R(560, 4, 160, 160, DARK, 20), R(605, 49, 70, 70, "#ffffff", 10),
       T(640, 214, "1× TPU v6e chip for the student", 22, 700, INK, "middle")]), bare=True)
   sh = (BOT - y1 - 230 - 12 - 2 * 12) / 3
@@ -725,7 +728,7 @@ We don't want either of these. We want a model in the top-left corner, one that 
           B(2, box(6, 6, TOP, 224, hbars([("Simple", "925 questions", 40.3, GRAY), ("Moderate", "465 questions", 20.3, GRAY),
                                      ("Challenging", "144 questions", 10.3, GRAY)], 760, 224, 75, 250, bar_h=44)) +
           box(6, 6, TOP + 236, top_h - 236, learn("The untrained 1.7B model gets only <b>10%</b> of the hardest questions right. Of its wrong answers, <b>574</b> return the wrong rows and <b>462</b> are not valid SQLite, because the model invents columns or uses another dialect's syntax. Companies see the same problem with their own schemas and SQL dialects.", CORAL, "Why fine-tune for the domain", cls="sm"))) +
-          B(3, box(0, 12, BOT - bet_h, bet_h, f'''<div class="bet"><div class="bet-k" style="color:{GOLD}"><span class="dot" style="background:{GOLD}"></span>The bet</div>
+          B(3, box(0, 12, BOT - bet_h, bet_h, f'''<div class="bet"><div class="bet-k" style="color:{DARK}"><span class="dot" style="background:{GOLD}"></span>The bet</div>
 <div class="bet-s">We bet that a big model could teach a small one, and that the small one could run on a single TPU chip.</div>
 <div class="bet-b">Before we started, we set two targets: at least <b>5 points</b> better than the untrained student, and at least <b>10×</b> cheaper per correct answer than the teacher.</div></div>''')),
           merge_notes("""Here is what "weak in the domain" looks like, with a real BIRD question. The untrained small model escapes the apostrophe the way MySQL does, and SQLite rejects the query. After training, the student uses SQLite's doubled quote and gets the right rows.
@@ -740,21 +743,21 @@ Before we started, we wrote down what success would mean: the student had to be 
   th = 500
   band = BOT - TOP - th - 12 - 58
   content(1, "The experiments", "Each task has an automatic grader",
-          box(0, 4, TOP, th, task_card("BIRD", "text-to-SQL", NEUTRAL, [
+          box(0, 4, TOP, th, task_card("BIRD", "text-to-SQL", BLUE, [
               ("Input", "a database schema, example rows, a hint and a question"),
               ("Answer", "one SQLite query"),
               ("Grader", "runs the query and compares its rows with the gold rows"),
               ("Evaluate", "dev: 1,534 questions on 11 unseen databases"),
               ("Train", "8,432 questions on 64 databases"),
               ("Student", "<b>Qwen3-1.7B</b> scores 30.6%; the teacher scores 60.7%")], cls="sm")) +
-          box(4, 4, TOP, th, task_card("FinQA", "financial reports", NEUTRAL, [
+          box(4, 4, TOP, th, task_card("FinQA", "financial reports", SKY, [
               ("Input", "one earnings-report page: text, a table, a question"),
               ("Answer", "<span class=mono>Answer: &lt;number&gt;</span>"),
               ("Grader", "checks that the number is within 1% of the gold answer"),
               ("Evaluate", "test: 1,147 questions on unseen report pages"),
               ("Train", "6,109 questions after removing overlaps"),
               ("Student", "<b>Qwen3-1.7B</b> scores 44.0%; the teacher scores 75.7%")], cls="sm")) +
-          box(8, 4, TOP, th, task_card("MATH", "competition maths", NEUTRAL, [
+          box(8, 4, TOP, th, task_card("MATH", "competition maths", PINK, [
               ("Input", "a competition problem, 7 subjects, 5 levels"),
               ("Answer", "<span class=mono>\\boxed{answer}</span>"),
               ("Grader", "checks the boxed answer against the gold answer after standard clean-up"),
@@ -778,12 +781,12 @@ For the third experiment we picked a different kind of student on purpose: Gemma
          ("Training data", "Only verified answers", "The grader checks every training answer, because a wrong answer would teach the student the wrong thing.", TEAL),
          ("Format", "Short answers", "Teacher and student both reason briefly. Without long reasoning traces, the teacher samples 4× faster.", BLUE),
          ("Training", "LoRA on one TPU host", "LoRA fits on a single TPU v6e-8, and every size is a multiple of 256 to match the chip's matrix unit.", SKY),
-         ("Evaluation", "Comparisons within one run", "We evaluate every model, a control and a second copy of the baseline together.", CORAL)]
+         ("Evaluation", "Comparisons within one run", "We evaluate every model, a control and a second copy of the baseline together.", PINK)]
   cards = []
   for i, (k, head_, why, col) in enumerate(dec):
     c, r = (i % 3) * 4, i // 3
     cards.append(box(c, 4, TOP + r * (hcard + 30), hcard,
-                     f'''<div class="dec" style="border-top:10px solid {NEUTRAL}"><div class="dec-k">{esc(k)}</div>
+                     f'''<div class="dec" style="border-top:10px solid {col}"><div class="dec-k">{esc(k)}</div>
 <div class="dec-c">{esc(head_)}</div><div class="dec-w">{esc(why)}</div></div>'''))
   content(1, "The experiments", "Six decisions shaped the experiments", "".join(Bi(i, c) for i, c in enumerate(cards)),
           """Six decisions shaped all three experiments. We picked tasks with automatic graders, so a single run takes a few minutes and can show a two-point change. We used a weak student and a strong one, to see when a teacher helps. We trained only on verified answers. We kept answers short, without long reasoning traces. We trained with LoRA on one TPU host. And we compared models only within the same run, alongside a control and a second copy of the baseline. ~1.5 min.""")
@@ -791,9 +794,10 @@ For the third experiment we picked a different kind of student on purpose: Gemma
   # ---------------- 3. journey
   dark_divider(3, "The journey", "The software we used, the six training steps, and what we learned at each step.", TEAL, "Part 3: the stack and the training journey. ~11 minutes.")
 
-  steps = [("Measure", "graders, noise floor", "teacher vs student", CORAL), ("Generate", "teacher answers, or", "the student's own", GOLD),
-           ("Verify", "grade every answer", "audit for leaks", TEAL), ("Distil", "LoRA SFT on TPU", "10–27 minutes", BLUE),
-           ("Reinforce", "GRPO, 6 rounds", "rewards correct answers", CORAL), ("Serve", "1 chip per replica", "price each answer", SKY)]
+  steps = [(n, a, b, STEP_COLOR[i]) for i, (n, a, b) in enumerate([
+      ("Measure", "graders, noise floor", "teacher vs student"), ("Generate", "teacher answers, or", "the student's own"),
+      ("Verify", "grade every answer", "audit for leaks"), ("Distil", "LoRA SFT on TPU", "10–27 minutes"),
+      ("Reinforce", "GRPO, 6 rounds", "rewards correct answers"), ("Serve", "1 chip per replica", "price each answer")])]
   layers = [("Teacher", "8× H200, Vertex AI", INK, ["DeepSeek-V4.1-Flash", "Model Garden vLLM", "TP 8 + expert parallel"]),
             ("Pipeline", "CPU VM", GOLD, ["Python standard library", "sqlite3", "JSONL records", "paired bootstrap"]),
             ("Student serving", "1 TPU v6e chip each", TEAL, ["vLLM-TPU", "tpu-inference backend", "JAX"]),
@@ -803,7 +807,7 @@ For the third experiment we picked a different kind of student on purpose: Gemma
   st = TOP + fh + 16 + 58
   lh = (BOT - st - 4 * 10) / 5
   stack_html = "".join(box(0, 8, st + i * (lh + 10), lh,
-                           f'<div class="layer sm" style="border-left-color:{INK if n == "Teacher" else DARK}"><div class="layer-l">{esc(n)}<span>{esc(where)}</span></div>'
+                           f'<div class="layer sm" style="border-left-color:{c}"><div class="layer-l">{esc(n)}<span>{esc(where)}</span></div>'
                            f'<div class="pills">{"".join(f"<span class=pill>{esc(p)}</span>" for p in ps)}</div></div>')
                        for i, (n, where, c, ps) in enumerate(layers))
   rc = [("One code path", "Both students share one code path; only the task module changes."),
@@ -978,8 +982,8 @@ We also tried teacher corrections, where the teacher sees the student's failed a
           """Placeholder for Fred's experiment: the problem, why drawing, and what success means.""")
 
   content(4, "Fred's experiment", "Fred's training journey",
-          box(0, 12, TOP, 250, flow_svg([("Task", "to fill", "", SKY), ("Data", "to fill", "", GOLD), ("Check", "to fill", "", TEAL),
-                                         ("Train", "to fill", "", BLUE), ("Refine", "to fill", "", CORAL), ("Serve", "to fill", "", SKY)], CW, 250)) +
+          box(0, 12, TOP, 250, flow_svg([("Task", "to fill", "", DARK), ("Data", "to fill", "", DARK), ("Check", "to fill", "", DARK),
+                                         ("Train", "to fill", "", DARK), ("Refine", "to fill", "", DARK), ("Serve", "to fill", "", DARK)], CW, 250)) +
           box(0, 6, TOP + 290, BOT - TOP - 290, placeholder("Decisions Fred made", ["teacher signal", "student model", "how drawings are checked"])) +
           box(6, 6, TOP + 290, BOT - TOP - 290, placeholder("What each step taught him", ["learning 1", "learning 2", "learning 3"])),
           """Placeholder: Fred's training steps in the same flow, his decisions, and what each step taught him.""")
@@ -1024,7 +1028,7 @@ But the lessons are similar. Both projects cleaned the data first: only 42 perce
   choose_h = 76
   rch = BOT - ry - 58 - 12 - choose_h
   rcards = "".join(box(i * 2, 2, ry + 58, rch,
-                       f'<div class="rstep sm"><div class="rstep-h"><b style="background:{DARK};color:#ffffff">{i + 1}</b>{esc(n)}</div>'
+                       f'<div class="rstep sm" style="border-top:8px solid {STEP_COLOR[i]}"><div class="rstep-h"><b style="background:{STEP_COLOR[i]};color:{ON.get(STEP_COLOR[i], INK)}">{i + 1}</b>{esc(n)}</div>'
                        f'<div class="rstep-d">{esc(d)}</div><div class="rstep-s">{esc(sc)}</div></div>')
                    for i, (n, d, sc, c) in enumerate(rsteps))
   content(4, "Takeaways", "What we learned",
@@ -1467,7 +1471,7 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .vs { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 80px; color: __DARK__; height: 100%; display: flex; align-items: center; justify-content: center; }
 .q { background: __CARD__; border-radius: 18px; padding: 24px 30px; height: 100%; font-size: 31px; line-height: 1.35; font-weight: 600; }
 .q span { display: block; font-size: 20px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: __MUTED__; margin-bottom: 8px; }
-.code { background: __DARK__; border-radius: 18px; padding: 22px 30px; height: 100%; }
+.code { background: __INK__; border-radius: 18px; padding: 22px 30px; height: 100%; }
 .code-l { font-size: 20px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px; }
 .code pre { margin: 0; color: __CREAM__; font: 28px/1.5 'DejaVu Sans Mono', monospace; white-space: pre; }
 .dec { background: __CARD__; border-radius: 22px; padding: 28px 32px; height: 100%; }
@@ -1573,9 +1577,9 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .rstep.sm { padding: 16px 18px; } .rstep.sm .rstep-h { font-size: 22px; gap: 10px; margin-bottom: 8px; line-height: 1.1; }
 .rstep.sm .rstep-h b { width: 34px; height: 34px; font-size: 17px; flex: none; } .rstep.sm .rstep-d { font-size: 18px; line-height: 1.32; }
 .rstep.sm .rstep-s { font-size: 14px; padding-top: 6px; }
-.bet { background: __DARK__; color: __CREAM__; border-radius: 22px; height: 100%; padding: 22px 34px; display: flex; flex-direction: column; justify-content: center; }
+.bet { background: __CREAM__; color: __INK__; box-shadow: inset 0 0 0 2px __GOLD__; border-radius: 22px; height: 100%; padding: 22px 34px; display: flex; flex-direction: column; justify-content: center; }
 .bet-k { font-size: 20px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
-.bet-s { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; font-size: 36px; line-height: 1.15; margin: 10px 0 10px; }
+.bet-s { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; color: __DARK__; font-size: 36px; line-height: 1.15; margin: 10px 0 10px; }
 .bet-b { font-size: 23px; line-height: 1.35; }
 .source.two { top: 990px; font-size: 19px; line-height: 1.3; }
 .build { opacity: 0; transition: opacity .3s ease; }
