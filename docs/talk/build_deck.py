@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the TPU-Distil talk (BIRD, FinQA, MATH and Fred's drawing experiment) as one self-contained HTML deck.
+"""Build the TPU-Distil talk (BIRD, FinQA, MATH and SVG drawing) as one self-contained HTML deck.
 
 Slides are 1920x1080 and laid out on a 12-column grid (120 px margins, 40 px gutters); every element is
 an absolutely positioned box, so nothing depends on text flow. Colours come from Sanzo Wada's "A
@@ -13,6 +13,7 @@ With ?qa in the URL the page writes every box whose content overflows into #qa (
 
 Usage: build_deck.py --out tpu_distil_talk.html --fonts DIR [--notes-md speaker_notes.md]
 DIR holds Figtree[wght].ttf (body) and InterTight[wght].ttf (headings), both from Google Fonts; they are embedded in the page.
+The drawing-task figures come from assets/ (written by extract_drawing_assets.py) and are embedded too.
 """
 from __future__ import annotations
 
@@ -65,6 +66,13 @@ def gw(span: int) -> float:
 
 
 SLIDES: list[tuple[str, str, str]] = []   # (body, notes, theme)
+ASSETS = Path(__file__).resolve().parent / "assets"
+
+
+def img(name, style=""):
+  """An embedded PNG from assets/."""
+  data = base64.b64encode((ASSETS / name).read_bytes()).decode()
+  return f'<img src="data:image/png;base64,{data}" alt="" style="{style}">'
 
 
 def esc(s) -> str:
@@ -165,8 +173,9 @@ def ref(fragment: str) -> tuple[int, str]:
 APPENDIX: list[tuple[str, int, int, str, str]] = []   # (code, appendix slide number, main slide number, title, part colour)
 
 
-def appendix(ch, code_, fragment, title, inner, notes, source=""):
-  """A deep-dive slide: kicker carries its code, a pill names the main slide it backs."""
+def appendix(ch, fragment, title, inner, notes, source=""):
+  """A deep-dive slide: kicker carries its code (A1, A2, ... in order), a pill names the main slide it backs."""
+  code_ = f"A{len(APPENDIX) + 1}"
   n, t = ref(fragment)
   col = DARK
   src = f'<div class="source" style="left:{ML}px;width:{CW}px">{source}</div>' if source else ""
@@ -660,23 +669,22 @@ def build():
   # ---------------- opening
   add(f'''<div class="kicker" style="left:{ML}px;top:150px;color:{GOLD}"><span class="dot" style="background:{GOLD}"></span>TPU-Distil · October 2026</div>
 <h1 class="hero" style="left:{ML}px;top:320px;width:1100px">Big-model quality<br>at a small-model price</h1>
-<div class="div-sub" style="left:{ML}px;top:580px;width:980px">How we taught small models to do the job of a 552B model on SQL, finance and maths, and served each one on a single Cloud TPU chip</div>
-<div class="author" style="left:{ML}px;top:790px">Jawad Amin and Fred<br><span style="color:{SKY}">github.com/jawadaminGOOG/tpu-distil</span></div>
+<div class="div-sub" style="left:{ML}px;top:580px;width:980px">How we taught small models to do the job of a 552B model on SQL, finance, maths and drawing, and served each one on a single Cloud TPU chip</div>
+<div class="author" style="left:{ML}px;top:790px">Jawad Amin and Fred Molina<br><span style="color:{SKY}">github.com/jawadaminGOOG/tpu-distil</span></div>
 <div class="circle" style="left:1250px;top:120px;width:560px;height:560px;background:{TEAL}"></div>
 <div class="circle" style="left:1140px;top:560px;width:250px;height:250px;background:{GOLD}"></div>
 <div class="circle" style="left:1620px;top:640px;width:170px;height:170px;background:{CORAL}"></div>
 <div class="circle" style="left:1440px;top:820px;width:100px;height:100px;background:{SKY}"></div>''',
       """Welcome. This talk is about getting the quality of a big model at the price of a small one.
-A frontier model does specialist work well, but it needs a whole 8-GPU server. A small model is cheap, but it isn't good at the job. We used the big model to teach small models on three tasks: SQL, financial questions and competition maths. Then we served each student on a single TPU chip. Along the way we found that the recipe has to change when the student is already strong.
-After that, Fred will show his experiment, which took a different route: teaching models to draw. ~1 min.""", "dark")
+A frontier model does specialist work well, but it needs a whole 8-GPU server. A small model is cheap, but it isn't good at the job. We used big models to teach small models on four tasks: SQL, financial questions, competition maths, and drawing pictures as SVG code. Then we served each student on TPU. Along the way we found that the recipe has to change when the student is already strong, and that when a check can only read the format, you have to look at the outputs. ~1 min.""", "dark")
 
   agenda = []
   pw = (CW - 4 * 32) / 5
   items = [("The problem", "Why big models are hard to serve and small models fall short", 6),
-           ("The experiments", "The three tasks, the two students and how we chose them", 5),
-           ("The journey", "Our software stack and the six training steps, with what we learned at each one", 11),
-           ("What we got", "The results, the two recipes and why we trust the numbers", 11),
-           ("Fred's experiment", "How Fred taught models to draw", 7)]
+           ("The experiments", "The four tasks, the three students and how we chose them", 6),
+           ("The journey", "Our software stack and the six training steps, with what we learned at each one", 13),
+           ("What we got", "The results, the two recipes, the drawings and why we trust the numbers", 13),
+           ("Wrap-up", "How this compares with other work, a recipe to try, and what we learned", 5)]
   for i, (t, d, mins) in enumerate(items):
     x = ML + i * (pw + 32)
     num_col = DARK if CH_COLOR[i] == SKY else CH_COLOR[i]   # lavender is too pale for text on white
@@ -684,7 +692,7 @@ After that, Fred will show his experiment, which took a different route: teachin
 <div class="ag-n" style="color:{num_col}">{i + 1:02d}</div><div class="ag-t">{esc(t)}</div><div class="ag-d">{esc(d)}</div><div class="ag-m">~{mins} min</div></div>''')
   add(f'''<div class="kicker" style="left:{ML}px;top:70px"><span class="dot" style="background:{CORAL}"></span>Agenda</div>
 <h2 class="title" style="left:{ML}px;top:104px;width:{CW}px">What we'll cover</h2>{"".join(agenda)}''',
-      """The talk has five parts. First the problem. Then the three experiments and how we set them up. Then the training process, step by step. Then the results, including the point where the recipe had to change. And then Fred's experiment. At the end I'll compare our work with Meta's TorchTitan RL work, give you a recipe you can try yourself, and sum up. ~30 s.""")
+      """The talk has five parts. First the problem. Then the four experiments and how we set them up. Then the training process, step by step. Then the results, including the point where the recipe had to change and what the drawings show. Finally we'll compare our work with Meta's TorchTitan RL work, give you a recipe you can try yourself, and sum up. ~30 s.""")
 
   # ---------------- 1. problem
   dark_divider(1, "The problem", "Frontier models do the job well, but they are expensive and GPUs are hard to get. Small models are cheap, but they don't know the domain.", CORAL,
@@ -738,46 +746,55 @@ Before we started, we wrote down what success would mean: the student had to be 
           "BIRD dev; accuracy by BIRD's difficulty label for the untrained Qwen3-1.7B; example dev-1347, question paraphrased")
 
   # ---------------- 2. experiments
-  dark_divider(2, "The experiments", "We ran the same pipeline on three tasks with two different students.", GOLD, "Part 2: the experiment setup. ~5 minutes.")
+  dark_divider(2, "The experiments", "We ran the same recipe on four tasks with three different students.", GOLD, "Part 2: the experiment setup. ~6 minutes.")
 
-  th = 500
+  th = 506
   band = BOT - TOP - th - 12 - 58
   content(1, "The experiments", "Each task has an automatic grader",
-          box(0, 4, TOP, th, task_card("BIRD", "text-to-SQL", BLUE, [
+          box(0, 3, TOP, th, task_card("BIRD", "text-to-SQL", BLUE, [
               ("Input", "a database schema, example rows, a hint and a question"),
               ("Answer", "one SQLite query"),
               ("Grader", "runs the query and compares its rows with the gold rows"),
               ("Evaluate", "dev: 1,534 questions on 11 unseen databases"),
               ("Train", "8,432 questions on 64 databases"),
-              ("Student", "<b>Qwen3-1.7B</b> scores 30.6%; the teacher scores 60.7%")], cls="sm")) +
-          box(4, 4, TOP, th, task_card("FinQA", "financial reports", SKY, [
+              ("Student", "<b>Qwen3-1.7B</b> scores 30.6%; the teacher scores 60.7%")], cls="sm xs")) +
+          box(3, 3, TOP, th, task_card("FinQA", "financial reports", SKY, [
               ("Input", "one earnings-report page: text, a table, a question"),
               ("Answer", "<span class=mono>Answer: &lt;number&gt;</span>"),
               ("Grader", "checks that the number is within 1% of the gold answer"),
               ("Evaluate", "test: 1,147 questions on unseen report pages"),
               ("Train", "6,109 questions after removing overlaps"),
-              ("Student", "<b>Qwen3-1.7B</b> scores 44.0%; the teacher scores 75.7%")], cls="sm")) +
-          box(8, 4, TOP, th, task_card("MATH", "competition maths", PINK, [
+              ("Student", "<b>Qwen3-1.7B</b> scores 44.0%; the teacher scores 75.7%")], cls="sm xs")) +
+          box(6, 3, TOP, th, task_card("MATH", "competition maths", PINK, [
               ("Input", "a competition problem, 7 subjects, 5 levels"),
               ("Answer", "<span class=mono>\\boxed{answer}</span>"),
               ("Grader", "checks the boxed answer against the gold answer after standard clean-up"),
               ("Evaluate", "test: 5,000 problems"),
               ("Train", "6,262 problems after removing overlaps"),
-              ("Student", "<b>Gemma 4 E2B</b> scores 74.9%; the teacher scores 92.5%")], cls="sm")) +
-          B(1, head(0, 12, TOP + th + 12, "One student starts weak, the other starts strong", "untrained student vs teacher, same prompt") +
-          box(0, 8, BOT - band, band, card("Qwen3-1.7B starts weak", "It is about 30 points behind the teacher on SQL and finance, so it has the most to learn. It is also the cheapest to serve.", TEAL, cls="sm")) +
-          box(8, 4, BOT - band, band, card("Gemma 4 E2B starts strong", "It already solves 74.9% of MATH problems. We wanted to know if a teacher still helps.", GOLD, cls="sm"))),
-          merge_notes("""We ran three experiments through the same pipeline. In BIRD, the model writes SQL against a database schema, and the grader runs the query and compares the rows. In FinQA, the model answers a numerical question about a page from an earnings report, which has text and a table, and the grader checks that the number is within one percent. In MATH, the model solves competition problems and puts its answer in a box, and the grader checks for an exact match.
-Each task is one module in the code, with its own prompt, answer extraction and grader. Everything else is shared: generation, verification, training and serving. Every grader also passes two checks: gold answers score 100 percent and shuffled answers score close to zero. ~1.5 min.""",
+              ("Student", "<b>Gemma 4 E2B</b> scores 74.9%; the teacher scores 92.5%")], cls="sm xs")) +
+          box(9, 3, TOP, th, task_card("Drawing", "SVG code", DARK, [
+              ("Input", "a short scene, such as “Green Tree On Grass Field”"),
+              ("Answer", "one SVG document"),
+              ("Grader", "checks that the output parses as XML with an <span class=mono>&lt;svg&gt;</span> root; we compare the renders"),
+              ("Evaluate", "4 test prompts, served on vLLM TPU inference and rendered side by side"),
+              ("Train", "20,000 teacher SVGs that pass the check"),
+              ("Student", "<b>Gemma 3 4B</b>; the teacher is <b>Qwen2.5-Coder-7B</b>")], cls="sm xs")) +
+          B(1, head(0, 12, TOP + th + 12, "Two students start weak, one starts strong", "untrained student vs teacher, same prompt") +
+          box(0, 6, BOT - band, band, card("Qwen3-1.7B starts weak", "It is about 30 points behind the teacher on SQL and finance, so it has the most to learn. It is also the cheapest to serve.", TEAL, cls="sm xs")) +
+          box(6, 3, BOT - band, band, card("Gemma 4 E2B starts strong", "It already solves 74.9% of MATH problems. We wanted to know if a teacher still helps.", GOLD, cls="sm xs")) +
+          box(9, 3, BOT - band, band, card("Gemma 3 4B can't draw yet", "Untrained, it often ignores the prompt, and 1 of its 4 test drawings doesn't parse.", TEAL, cls="sm xs"))),
+          merge_notes("""We ran four experiments with the same recipe. In BIRD, the model writes SQL against a database schema, and the grader runs the query and compares the rows. In FinQA, the model answers a numerical question about a page from an earnings report, which has text and a table, and the grader checks that the number is within one percent. In MATH, the model solves competition problems and puts its answer in a box, and the grader checks for an exact match. In the fourth, drawing, the model gets a short scene description, like "Green Tree On Grass Field", and writes an SVG document. Its automatic check is weaker: it confirms the output parses as SVG, but it can't say whether the picture matches the prompt, so we also compare the drawings ourselves.
+Each graded task is one module in the code, with its own prompt, answer extraction and grader. Everything else is shared: generation, verification, training and serving. Every grader also passes two checks: gold answers score 100 percent and shuffled answers score close to zero. ~2 min.""",
                       """We chose each student by how far it was behind the teacher, measured on the same benchmark with the same prompt. Qwen3-1.7B is about 30 points behind on both SQL and finance, so it has a lot to learn. The next size up, Qwen3-4B, already matched the teacher on BIRD, so there was nothing left to teach it.
-For the third experiment we picked a different kind of student on purpose: Gemma 4 E2B on competition maths. It is already strong, at 74.9 percent, and much closer to the teacher. That let us test whether a teacher still helps a student like that. ~1.5 min."""),
-          ["Teacher DeepSeek-V4.1-Flash on 8× H200 for all three; students served by vLLM-TPU on one v6e chip; non-thinking mode throughout",
+For the third experiment we picked a different kind of student on purpose: Gemma 4 E2B on competition maths. It is already strong, at 74.9 percent, and much closer to the teacher. That let us test whether a teacher still helps a student like that.
+For drawing, the student is Gemma 3 4B and the teacher is Qwen2.5-Coder-7B, a coding model less than twice its size. Untrained, Gemma 3 4B often ignores the prompt. ~2 min."""),
+          ["Teacher DeepSeek-V4.1-Flash on 8× H200 for BIRD, FinQA and MATH; their students served by vLLM-TPU on one v6e chip; non-thinking mode throughout",
            "Untrained student vs teacher, same prompt, greedy decoding; Qwen3-4B already scored 61.7% on BIRD and was not used"],
-          also=["One student starts weak, the other starts strong"])
+          also=["Two students start weak, one starts strong"])
 
   hcard = (BOT - TOP - 30) / 2
   dec = [("Tasks", "Tasks with automatic graders", "A program checks every answer, so one run takes minutes and can show a 2-point change. An agentic benchmark needs hours per run.", CORAL),
-         ("Students", "A weak student and a strong one", "With two students we can see when a teacher helps, and when it doesn't.", GOLD),
+         ("Students", "A weak student and a strong one", "With weak and strong students we can see when a teacher helps, and when it doesn't.", GOLD),
          ("Training data", "Only verified answers", "The grader checks every training answer, because a wrong answer would teach the student the wrong thing.", TEAL),
          ("Format", "Short answers", "Teacher and student both reason briefly. Without long reasoning traces, the teacher samples 4× faster.", BLUE),
          ("Training", "LoRA on one TPU host", "LoRA fits on a single TPU v6e-8, and every size is a multiple of 256 to match the chip's matrix unit.", SKY),
@@ -789,10 +806,10 @@ For the third experiment we picked a different kind of student on purpose: Gemma
                      f'''<div class="dec" style="border-top:10px solid {col}"><div class="dec-k">{esc(k)}</div>
 <div class="dec-c">{esc(head_)}</div><div class="dec-w">{esc(why)}</div></div>'''))
   content(1, "The experiments", "Six decisions shaped the experiments", "".join(Bi(i, c) for i, c in enumerate(cards)),
-          """Six decisions shaped all three experiments. We picked tasks with automatic graders, so a single run takes a few minutes and can show a two-point change. We used a weak student and a strong one, to see when a teacher helps. We trained only on verified answers. We kept answers short, without long reasoning traces. We trained with LoRA on one TPU host. And we compared models only within the same run, alongside a control and a second copy of the baseline. ~1.5 min.""")
+          """Six decisions shaped the experiments. We picked tasks with automatic graders, so a single run takes a few minutes and can show a two-point change. For drawing, the automatic check covers only the format, so we also look at the pictures. We used a weak student and a strong one, to see when a teacher helps. We trained only on verified answers. We kept answers short, without long reasoning traces. We trained with LoRA on one TPU host. And we compared models only within the same run, alongside a control and a second copy of the baseline. ~1.5 min.""")
 
   # ---------------- 3. journey
-  dark_divider(3, "The journey", "The software we used, the six training steps, and what we learned at each step.", TEAL, "Part 3: the stack and the training journey. ~11 minutes.")
+  dark_divider(3, "The journey", "The software we used, the six training steps, and what we learned at each step.", TEAL, "Part 3: the stack and the training journey. ~13 minutes.")
 
   steps = [(n, a, b, STEP_COLOR[i]) for i, (n, a, b) in enumerate([
       ("Measure", "graders, noise floor", "teacher vs student"), ("Generate", "teacher answers, or", "the student's own"),
@@ -802,15 +819,16 @@ For the third experiment we picked a different kind of student on purpose: Gemma
             ("Pipeline", "CPU VM", GOLD, ["Python standard library", "sqlite3", "JSONL records", "paired bootstrap"]),
             ("Student serving", "1 TPU v6e chip each", TEAL, ["vLLM-TPU", "tpu-inference backend", "JAX"]),
             ("Training", "TPU v6e-8 host", BLUE, ["JAX + libtpu", "Tunix", "qwix LoRA", "Flax NNX", "Optax", "Orbax"]),
-            ("Glue", "everywhere", SKY, ["Hugging Face transformers", "safetensors", "Cloud Storage"])]
+            ("Glue", "everywhere", SKY, ["Hugging Face transformers", "safetensors", "Cloud Storage"]),
+            ("Drawing", "one Colab notebook", DARK, ["Qwen2.5-Coder-7B", "peft + trl", "bitsandbytes QLoRA", "vLLM TPU inference"])]
   fh = 200
   st = TOP + fh + 16 + 58
-  lh = (BOT - st - 4 * 10) / 5
-  stack_html = "".join(box(0, 8, st + i * (lh + 10), lh,
+  lh = (BOT - st - 5 * 8) / 6
+  stack_html = "".join(box(0, 8, st + i * (lh + 8), lh,
                            f'<div class="layer sm" style="border-left-color:{c}"><div class="layer-l">{esc(n)}<span>{esc(where)}</span></div>'
                            f'<div class="pills">{"".join(f"<span class=pill>{esc(p)}</span>" for p in ps)}</div></div>')
                        for i, (n, where, c, ps) in enumerate(layers))
-  rc = [("One code path", "Both students share one code path; only the task module changes."),
+  rc = [("One code path", "The graded tasks share one code path; only the task module changes. Drawing runs as one notebook."),
         ("One checkpoint format", "Trainer, server and storage all use merged Hugging Face safetensors."),
         ("Simple pipeline scripts", "It uses standard-library Python and JSONL, so every number can be regenerated."),
         ("One trainer for both models", "The same Tunix trainer handles Qwen3 and Gemma 4 on one v6e-8.")]
@@ -820,8 +838,8 @@ For the third experiment we picked a different kind of student on purpose: Gemma
           B(1, head(0, 12, TOP + fh + 16, "We built everything on open-source libraries", "distilling takes 10–27 min on one TPU v6e-8 host") +
           stack_html +
           "".join(box(8, 4, st + i * (rh + 10), rh, runin(t, b)) for i, (t, b) in enumerate(rc))),
-          merge_notes("""Here is the whole process on one slide. All three experiments follow it. We measure the gap and the noise. We generate training answers, from the teacher for a weak student or from the student itself for a strong one. We check every answer with the task's grader. We distil with LoRA on one TPU host. We reinforce with GRPO. And we serve each student on one chip and work out the price of each answer. Distillation takes 10 to 27 minutes, and the final students are 4.8 to 17.5 times cheaper per correct answer than the teacher. ~1 min.""",
-                      """Everything in the stack is open source. The teacher runs in Vertex AI Model Garden's vLLM container on eight H200s. The pipeline is plain Python standard-library scripts that write JSONL, so we can regenerate every number from the raw files. We serve students with vLLM-TPU, one copy per chip, and train them with Tunix and qwix LoRA in JAX on one v6e-8 host. The same trainer handles both Qwen3 and Gemma 4. The trainer, the server and storage all use one checkpoint format, Hugging Face safetensors. ~1 min."""),
+          merge_notes("""Here is the whole process on one slide. All four experiments follow it. We measure the gap and the noise. We generate training answers, from the teacher for a weak student or from the student itself for a strong one. We check every answer with the task's grader. We distil with LoRA on one TPU host. We reinforce with GRPO. And we serve each student on one chip and work out the price of each answer. Distillation takes 10 to 27 minutes, and the final students are 4.8 to 17.5 times cheaper per correct answer than the teacher. ~1 min.""",
+                      """Everything in the stack is open source. The teacher runs in Vertex AI Model Garden's vLLM container on eight H200s. The pipeline is plain Python standard-library scripts that write JSONL, so we can regenerate every number from the raw files. We serve students with vLLM-TPU, one copy per chip, and train them with Tunix and qwix LoRA in JAX on one v6e-8 host. The same trainer handles both Qwen3 and Gemma 4. The trainer, the server and storage all use one checkpoint format, Hugging Face safetensors. The drawing experiment runs as one Colab notebook: Qwen2.5-Coder-7B writes the SVGs, the student trains with QLoRA using transformers, peft and trl, and all three drawing models run on vLLM TPU inference. ~1.5 min."""),
           "Versions: vLLM 0.26.1rc1 TPU build, JAX 0.11.0, libtpu 0.0.44, Tunix 0.1.8, qwix 0.1.8, Flax 0.12.8, transformers 5.12.1 (docs/RECIPE.md)",
           also=["We built everything on open-source libraries"])
 
@@ -872,8 +890,25 @@ The bars sort every training question, in every round, into three groups. Teal m
       ["Step 5: training pool, 8 samples per question at T 1.0, policy that produced each round's samples; BIRD all-wrong = 100 − pass@8, all-right = pass@8 − mixed",
        "Step 6: serving cost per 1,000 correct BIRD answers; student at the on-demand TPU v6e rate, teacher at the cheapest listed H200 rate"])
 
+  dsteps = [("Measure", "4 test prompts", "teacher vs untrained", STEP_COLOR[0]), ("Generate", "Qwen2.5-Coder-7B", "20,000 valid SVGs", STEP_COLOR[1]),
+            ("Verify", "keep SVGs that", "parse as XML", STEP_COLOR[2]), ("Distil", "QLoRA, Gemma 3 4B", "1,250 steps, 2.5 h", STEP_COLOR[3]),
+            ("Reinforce", "not run", "on drawing", GRAY), ("Serve", "vLLM TPU inference", "all three models", STEP_COLOR[5])]
+  dh = BOT - TOP - fh - 16
+  drh = (dh - 3 * 10) / 4
+  content(2, "The journey · drawing", "Drawing runs the same six steps",
+          box(0, 12, TOP, fh, flow_svg(dsteps, CW, 250)) +
+          B(1, box(0, 7, TOP + fh + 16, dh, f'<div class="pic">{img("svg_loss_curve.png")}</div>')) +
+          B(2, "".join(box(7, 5, TOP + fh + 16 + i * (drh + 10), drh, runin(t, b, a)) for i, (t, b, a) in enumerate([
+              ("A coding model teaches.", "The teacher, Qwen2.5-Coder-7B, is less than twice the size of the 4B student.", BLUE),
+              ("The check reads the format.", "It keeps SVGs that parse as XML with an <span class=mono>&lt;svg&gt;</span> root; it can't tell whether a drawing shows the prompt.", SKY),
+              ("QLoRA on 20,000 drawings.", "One epoch, 1,250 steps in 2 h 31 min; training loss fell from 0.687 to 0.199.", TEAL),
+              ("The same serving stack.", "Teacher, untrained and distilled students all run on vLLM TPU inference.", DARK)]))),
+          """The drawing experiment uses the same six steps with a different pair of models. The teacher is Qwen2.5-Coder-7B, a coding model, and the student is Gemma 3 4B. We measure by rendering four test prompts for the teacher and the untrained student. The teacher writes 20,000 SVG drawings, about two valid ones per second, and we keep only the ones that parse as SVG. Then we distil with QLoRA: one epoch, 1,250 steps, two and a half hours, and the training loss falls from 0.69 to 0.20. We didn't run RL on drawing. All three models serve on vLLM TPU inference.
+The difference from the other tasks is the check: it tells us a drawing is valid SVG, not that it shows the right thing. So for drawing we look at the pictures, which is where the results start. ~1.5 min.""",
+          "Drawing run: one Colab notebook (transformers ≥ 4.50, peft ≥ 0.14, trl ≥ 0.14, bitsandbytes ≥ 0.45); the curve plots 1 − training loss")
+
   # ---------------- 4. results
-  dark_divider(4, "What we got", "What each experiment achieved, why the recipe changed for the strong student, and why we trust the numbers.", BLUE, "Part 4: results. ~11 minutes.")
+  dark_divider(4, "What we got", "What each experiment achieved, why the recipe changed for the strong student, and why we trust the numbers.", BLUE, "Part 4: results. ~13 minutes.")
 
   def lhead(name, sub):
     return f'<div class="lh">{esc(name)}<span>{esc(sub)}</span></div>'
@@ -895,13 +930,38 @@ The bars sort every training question, in every round, into three groups. Teal m
     col += box(c * 4, 4, TOP + 60, lad_h, ladder(groups, 533, 520, 100, teacher, True, True))
     col += "".join(box(c * 4, 4, sy0 + i * (srh + 10), srh, srow(b, cp, a)) for i, (b, cp, a) in enumerate(stats))
     inner += Bi(c, col)
-  content(3, "What we got", "All three students improved", inner,
-          merge_notes("""All three students improved, and every confidence interval is above zero. On BIRD, accuracy went from 30.6 to 52.2 percent, a gain of 21.6 points. On FinQA it went from 44 to 72.5 percent, a gain of 28.4 points, which is only three points short of the teacher. On MATH, Gemma went from 74.9 to 78.4 percent, a gain of 3.5 points. Look at the middle bar for MATH: it isn't trained on the teacher's data. On MATH, the best recipe trained the student on its own answers. The numbers under each chart split every gain into its steps. ~1 min.""",
+  content(3, "What we got", "Every graded task improved", inner,
+          merge_notes("""Every graded task improved, and every confidence interval is above zero. On BIRD, accuracy went from 30.6 to 52.2 percent, a gain of 21.6 points. On FinQA it went from 44 to 72.5 percent, a gain of 28.4 points, which is only three points short of the teacher. On MATH, Gemma went from 74.9 to 78.4 percent, a gain of 3.5 points. Look at the middle bar for MATH: it isn't trained on the teacher's data. On MATH, the best recipe trained the student on its own answers. The numbers under each chart split every gain into its steps. ~1 min.""",
                       """Let's look at BIRD. On 1,534 questions over eleven databases the student never saw, accuracy went from 30.6 to 48.2 percent after distillation, and to 52.2 after GRPO. The teacher scores 60.7. Distillation gave the biggest gain, 17.6 points, and RL added four more. The final student closed 72 percent of the gap to the teacher, and producing it cost 136 dollars of compute. ~1 min.""",
                       """FinQA was our replication. We used the same student, the same teacher, the same settings and the same six-round schedule, all fixed before the run. The only new code was the task module. On 1,147 test questions, accuracy went from 44 to 66.6 percent after distillation and to 72.5 after GRPO, 3.2 points short of the teacher. Both gains are far larger than the noise, and the final student closed 90 percent of the gap for 79 dollars. ~1 min."""),
           ["Each panel: one same-run evaluation; KD = teacher answers, Self = the student's own verified answers; dashed line = teacher; paired differences with bootstrap 95% CIs",
            "BIRD dev, 1,534 questions; FinQA test, 1,147 questions, settings and schedule unchanged from BIRD; MATH test, 5,000 problems"],
           )
+
+  prompts = [("tree", "Green Tree On Grass Field"), ("star", "Yellow Star In Dark Night"), ("sun", "Yellow Sun Over Golden Beach"),
+             ("rocket", "Red Rocket In Deep Space")]
+  models = [("teacher", "Teacher", "Qwen2.5-Coder-7B", 0), ("base", "Untrained", "Gemma 3 4B", 1), ("distilled", "Distilled", "Gemma 3 4B", 2)]
+  invalid = {("rocket", "base")}
+  def cell(cls, step, inner):
+    return f'<div class="{cls} build" data-step="{step}">{inner}</div>' if step else f'<div class="{cls}">{inner}</div>'
+  gal = ['<div></div>'] + [cell("gh", st_, f"{lab}<b>{m}</b>") for _, lab, m, st_ in models]
+  for key, text in prompts:
+    gal.append(f'<div class="gp">“{esc(text)}”</div>')
+    for m, _, _, st_ in models:
+      chip = '<span class="chip bad">invalid XML</span>' if (key, m) in invalid else '<span class="chip ok">valid XML</span>'
+      gal.append(cell("gc", st_, img(f"svg_{key}_{m}.png") + chip))
+  gs = 150
+  grh = (BOT - TOP - gs - 12 - 2 * 10) / 3
+  content(3, "What we got", "The distilled student draws like its teacher",
+          box(0, 8, TOP, BOT - TOP, f'<div class="gal">{"".join(gal)}</div>') +
+          B(3, box(8, 4, TOP, gs, stat("4 of 4", "distilled drawings parse as SVG; the untrained student managed 3 of 4", TEAL, cls="sm")) +
+          "".join(box(8, 4, TOP + gs + 12 + i * (grh + 10), grh, runin(t, b, a)) for i, (t, b, a) in enumerate([
+              ("What the check can't see.", "The untrained student's tree and sun both parse, but render as a green square and a brown square.", GRAY),
+              ("The distilled student copies the teacher's layouts:", "ground and a trunk, a sun over sand, a glowing star, a red disc on black.", TEAL),
+              ("A demonstration, not a measurement.", "Four prompts, one render each. Drawing has no accuracy score.", INK)]))),
+          """Here's what distillation did for drawing. Each row is one test prompt, and the columns are the teacher, the untrained Gemma 3 4B, and the distilled Gemma 3 4B. The untrained student often ignores the prompt: its tree is a green square, its beach is a brown square, and its rocket isn't valid SVG at all. The first two still pass the XML check, which is why the check alone isn't enough here.
+The distilled student copies the teacher's layouts: ground and a trunk for the tree, a sun over sand, a glowing star, and a red disc on black for the rocket. All four of its drawings parse. Four prompts are a demonstration, not a measurement, and drawing has no accuracy score. ~2 min.""",
+          "Renders of the same 4 test prompts from each model, from the drawing run's comparison table; chips show its XML check")
 
   fh2 = 456
   rih = (BOT - TOP - fh2 - 16 - 2 * 10) / 3
@@ -960,49 +1020,16 @@ We also tried teacher corrections, where the teacher sees the student's failed a
               ("Repeat runs agree.", "Three BIRD evaluations gave +17.8, +18.1 and +17.6. Four MATH evaluations stayed between +1.3 and +1.9."),
               ("No evaluation data leaked.", "A row-by-row audit found no evaluation database, report page or problem in the training data."),
               ("The results reproduce.", "A retrain produced a byte-identical model, and one script regenerates every number.")]))),
-          merge_notes("""Here's the chart from the start of the talk again. On BIRD, the trained student landed where we wanted it, in the cheap and accurate corner. It's 15.8 times cheaper per correct answer than the teacher. The table covers all three tasks. Hardware price gives a factor of 13.6 everywhere, and throughput and accuracy decide the rest. FinQA reaches 17.5 times. MATH reaches only 4.8 times, because Gemma's long answers make one chip slower than the teacher's eight GPUs. Short answers save real money. ~1.5 min.""",
+          merge_notes("""Here's the chart from the start of the talk again. On BIRD, the trained student landed where we wanted it, in the cheap and accurate corner. It's 15.8 times cheaper per correct answer than the teacher. The table covers all three tasks. Hardware price gives a factor of 13.6 everywhere, and throughput and accuracy decide the rest. FinQA reaches 17.5 times. MATH reaches only 4.8 times, because Gemma's long answers make one chip slower than the teacher's eight GPUs. Short answers save real money. Drawing has no cost figure, because we didn't measure its serving throughput. ~1.5 min.""",
                       """Why should you believe these numbers? Every gain sits next to its own noise floor, which we measured in the same run with two copies of the untrained model. The SQL and finance gains are about ten times the noise. The MATH gain is small, 3.5 points, but its interval is well clear of the noise. Repeat evaluations agree within a point, the audit found no leaks, a retrain was byte-identical, and one script regenerates every number. ~1.5 min."""),
           ["Chart: BIRD. Teacher at its cheapest listed H200 rate, students at the on-demand TPU rate; cost ratio = 13.6 × throughput × accuracy",
            "Right: paired differences in points with bootstrap 95% CIs; each row from a same-run evaluation"],
           also=["Why we trust these results"])
 
-  # ---------------- 5. Fred
-  dark_divider(5, "Fred teaches<br>models to draw", "Fred took a different route to the same goal: a small model that does a specialist job well.", SKY,
-               "Part 5: Fred's experiment. ~7 minutes.")
-
-  def placeholder(label, lines):
-    return (f'<div class="ph"><div class="ph-l">{esc(label)}</div>' + "".join(f"<div class='ph-i'>{esc(x)}</div>" for x in lines)
-            + '<div class="ph-n">Fred\'s details to come</div></div>')
-
-  hh = (BOT - TOP - 30) / 2
-  content(4, "Fred's experiment", "The problem Fred set out to solve",
-          box(0, 7, TOP, BOT - TOP, placeholder("Visual: what a drawing task looks like", ["the prompt", "the model's drawing", "what \"correct\" means"])) +
-          box(7, 5, TOP, hh, card("Why drawing", "Placeholder: why this task matters and where small models fall short.", NEUTRAL)) +
-          box(7, 5, TOP + hh + 30, hh, card("What success means", "Placeholder: how a drawing is judged, and the bar set in advance.", NEUTRAL)),
-          """Placeholder for Fred's experiment: the problem, why drawing, and what success means.""")
-
-  content(4, "Fred's experiment", "Fred's training journey",
-          box(0, 12, TOP, 250, flow_svg([("Task", "to fill", "", DARK), ("Data", "to fill", "", DARK), ("Check", "to fill", "", DARK),
-                                         ("Train", "to fill", "", DARK), ("Refine", "to fill", "", DARK), ("Serve", "to fill", "", DARK)], CW, 250)) +
-          box(0, 6, TOP + 290, BOT - TOP - 290, placeholder("Decisions Fred made", ["teacher signal", "student model", "how drawings are checked"])) +
-          box(6, 6, TOP + 290, BOT - TOP - 290, placeholder("What each step taught him", ["learning 1", "learning 2", "learning 3"])),
-          """Placeholder: Fred's training steps in the same flow, his decisions, and what each step taught him.""")
-
-  content(4, "Fred's experiment", "What Fred found, and how his approach compares",
-          box(0, 4, TOP, 440, placeholder("Results", ["before vs after", "example drawings", "cost to serve"])) +
-          box(4, 8, TOP, 440, '<div class="cmp cmp4"><div class="cmp-h"><span></span><b>SQL · finance</b><b>Maths</b><b>Drawing · Fred</b></div>'
-              '<div class="cmp-r"><span>Checked by</span><b>the grader</b><b>the grader</b><i>to fill</i></div>'
-              '<div class="cmp-r"><span>Training signal</span><b>teacher answers</b><b>own answers</b><i>to fill</i></div>'
-              '<div class="cmp-r"><span>Student</span><b>Qwen3-1.7B</b><b>Gemma 4 E2B</b><i>to fill</i></div>'
-              '<div class="cmp-r"><span>Gain</span><b>+21.6 / +28.4</b><b>+3.5</b><i>to fill</i></div>'
-              '<div class="cmp-r"><span>Cheaper</span><b>15.8× / 17.5×</b><b>4.8×</b><i>to fill</i></div></div>') +
-          box(0, 12, TOP + 480, BOT - TOP - 480, learn("Placeholder: the lesson both approaches share.", SKY, "What both approaches show")),
-          """Placeholder: Fred's results and the routes side by side.""")
-
   # ---------------- closing
   h3 = (BOT - TOP - 2 * 24) / 3
-  tt_rows = [["Task", "long-horizon terminal agents; Terminal-Bench, 89 hard tasks", "single-turn SQL, finance and maths answers"],
-             ["Student", "Qwen3.5-9B", "Qwen3-1.7B, Gemma 4 E2B"],
+  tt_rows = [["Task", "long-horizon terminal agents; Terminal-Bench, 89 hard tasks", "single-turn SQL, finance, maths and SVG drawing answers"],
+             ["Student", "Qwen3.5-9B", "Qwen3-1.7B, Gemma 4 E2B, Gemma 3 4B"],
              ["Hardware", "8× B300: 2 trainer, 5 rollout, 1 eval workers", "1 TPU v6e-8 host; teacher on 8× H200"],
              ["Starting point", "RL on ~1,000 cleaned tasks", "distil verified answers, then RL"],
              ["Algorithm", "DPPO, loss averaged per prompt", "GRPO, PPO clip, KL to the start"],
@@ -1039,15 +1066,15 @@ But the lessons are similar. Both projects cleaned the data first: only 42 perce
               '<div><b>If the student is weak, distil the teacher.</b> The teacher\'s verified answers gave most of the gain.</div>'
               '<div><b>If the student is strong, let it learn from itself.</b> Its own verified answers beat the teacher\'s.</div>'
               '<div><b>Then add RL.</b> Make sure the student\'s main failure gets a negative reward.</div>'
-              '<div><b>Measure carefully.</b> Compare models in one run, with a control and a noise floor, and price each correct answer.</div></div>')) +
+              '<div><b>Measure carefully.</b> Compare models in one run, with a control and a noise floor, price each correct answer, and look at the outputs when the check reads only the format.</div></div>')) +
           B(2, head(0, 12, ry, "How to run this recipe on your own task", "github.com/jawadaminGOOG/tpu-distil") +
           rcards) +
           B(3, box(0, 12, BOT - choose_h, choose_h, runin("How to choose the recipe.", "Train on the teacher's answers and on the student's own answers side by side. If the teacher's answers win, use KD + GRPO. If the student's own answers win, use self-distillation + GRPO, which needs no teacher time.", TEAL))),
-          merge_notes("""To wrap up: we used one pipeline on three tasks with two students. A 1.7-billion-parameter student gained 22 points on SQL and 28 on finance, and a strong Gemma student gained 3.5 points on competition maths. The students are 4.8 to 17.5 times cheaper per correct answer than the 552-billion-parameter teacher, and each one cost 79 to 159 dollars of compute to produce.
-If your student is weak, distil the teacher. If it's strong, let it learn from its own answers. Then add RL, and make sure the student's main failure gets a negative reward. And measure carefully. ~1 min.""",
+          merge_notes("""To wrap up: we used one recipe on four tasks with three students. A 1.7-billion-parameter student gained 22 points on SQL and 28 on finance, a strong Gemma student gained 3.5 points on competition maths, and a 4-billion-parameter Gemma learned to draw like its 7-billion-parameter coding teacher. The graded students are 4.8 to 17.5 times cheaper per correct answer than the 552-billion-parameter teacher, and each one cost 79 to 159 dollars of compute to produce.
+If your student is weak, distil the teacher. If it's strong, let it learn from its own answers. Then add RL, and make sure the student's main failure gets a negative reward. And measure carefully, and when the check can only read the format, look at the outputs. ~1 min.""",
                       """Here's the recipe, so you can try it on your own task. Measure the gap and the noise with one prompt. Generate two training sets, one from the teacher and one from the student itself. Keep only the answers your grader accepts, and check for leaks. Distil both sets with the same LoRA settings and keep the better one. That one comparison tells you whether your student is weak or strong. Then run GRPO with the grader as the reward, and count cut-off answers as wrong. Finally, serve on single chips and work out the price of a correct answer.
 The code you write is one task module. It loads the questions, builds a versioned prompt, extracts the answer and grades it, with gold and shuffled checks. We added FinQA and MATH exactly this way.
-Thank you; I'm happy to take questions. ~2 min."""),
+Thank you; we're happy to take questions. ~2 min."""),
           "Code, settings and commands: github.com/jawadaminGOOG/tpu-distil (README recipe, docs/RECIPE.md)",
           also=["How to run this recipe on your own task"])
 
@@ -1074,7 +1101,7 @@ def build_appendix():
     return "".join(box((i % 3) * 4, 4, TOP + (i // 3) * (h2 + 24), h2, card(t, b)) for i, (t, b, _) in enumerate(items))
 
   # ---- the problem
-  appendix(0, "A1", "whole GPU server", "The teacher ties up a whole server, even when idle",
+  appendix(0, "whole GPU server", "The teacher ties up a whole server, even when idle",
            box(0, 7, TOP, H, table(["Teacher deployment", ""], [
                ["Endpoint", "Vertex AI dedicated endpoint, a3-ultragpu-8g (8× H200), us-south1"],
                ["Container", "Model Garden vLLM <span class=mono>pytorch-vllm-serve</span>, release 20260922"],
@@ -1088,7 +1115,7 @@ def build_appendix():
            "The teacher needs a whole 8-GPU server, takes about 25 minutes to start, and bills while idle.",
            "docs/RECIPE.md (serving), docs/COMPUTE.md (endpoint uptime)")
 
-  appendix(0, "A2", "correct answer has a price", "How we price a correct answer",
+  appendix(0, "correct answer has a price", "How we price a correct answer",
            box(0, 7, TOP, 250, '<div class="formula"><div class="fx">$ per 1,000 correct = 1,000 × $/hour ÷ (requests/s × 3,600 × accuracy)</div>'
                '<div class="fn">requests/s: best error-free rate over a concurrency ladder, on the task\'s own prompts</div></div>') +
            box(0, 7, TOP + 274, H - 274, table(["Model, BIRD", "$/hour", "req/s", "Accuracy", "$ / 1,000 correct"], [
@@ -1100,7 +1127,7 @@ def build_appendix():
            "This is the formula behind every cost number, with the measured inputs. The pricing deliberately favours the teacher.",
            "Prices from the Cloud Billing Catalog, effective 2026-10-09")
 
-  appendix(0, "A3", "Generic small models", "The prompt the student sees on BIRD",
+  appendix(0, "Generic small models", "The prompt the student sees on BIRD",
            box(0, 7, TOP, H, code("SYSTEM  You write SQLite queries.\n\nUSER    1  CREATE TABLE statements\n        2  3 example rows per table,\n           each cell cut to 40 chars\n        3  BIRD external-knowledge hint\n        4  the question\n        5  reason briefly, then one\n           ```sql``` block", TEAL, "Prompt template · SHA-256 recorded per run")) +
            box(7, 5, TOP, H, table(["BIRD data", ""], [
                ["Evaluation", "dev: 1,534 questions on 11 databases, never trained on"],
@@ -1112,7 +1139,7 @@ def build_appendix():
            "docs/RECIPE.md §1; system message paraphrased")
 
   # ---- the experiments
-  appendix(1, "A4", "automatic grader", "How the FinQA task is set up",
+  appendix(1, "automatic grader", "How the FinQA task is set up",
            box(0, 6, TOP, H, code("SYSTEM  You are an expert financial\n        analyst.\n\nUSER    report text before the table\n        the table, pipe-separated rows\n        report text after the table\n        the question\n        reason briefly, end with\n        Answer: <number>\n        (yes/no only for yes/no questions)", TEAL, "Prompt finqa-2 · SHA-256 recorded")) +
            box(6, 6, TOP, 420, table(["FinQA", ""], [
                ["Splits", "train 6,251 · dev 883 · test 1,147 (evaluation)"],
@@ -1122,7 +1149,7 @@ def build_appendix():
            box(6, 6, TOP + 444, H - 444, learn("Our first prompt offered a yes/no answer on every question, and the base student answered yes or no on 363 numeric ones. We replaced the prompt, using dev, before generating any teacher answers.", CORAL, "Lesson")),
            "This shows what the student sees on FinQA and how its answer is graded.", "docs/RECIPE.md §8; README")
 
-  appendix(1, "A5", "automatic grader", "How the MATH task is set up",
+  appendix(1, "automatic grader", "How the MATH task is set up",
            box(0, 6, TOP, H, code("SYSTEM  You are an expert\n        mathematician.\n\nUSER    the problem\n        reason briefly, end with\n        \\boxed{<answer>}\n\nGRADE   last \\boxed{...}, balanced braces\n        reference strip_string normalisation:\n        spacing, \\left/\\right, dfrac, units,\n        degrees, percent, 0.5 = \\frac{1}{2}", BLUE, "Prompt math-1 · SHA-256 recorded")) +
            box(6, 6, TOP, 420, table(["MATH", ""], [
                ["Source", "EleutherAI/hendrycks_math, MIT licence; 7 subjects, 5 levels"],
@@ -1132,19 +1159,29 @@ def build_appendix():
            box(6, 6, TOP + 444, H - 444, learn("Exact matching counts equal answers written differently, like 2√2 and √8, as wrong. This affects every model equally.", GOLD, "Caveat")),
            "We added the MATH task module the same way as FinQA.", "docs/RECIPE.md §9; README")
 
-  appendix(1, "A6", "starts weak", "A closer look at the two students",
-           box(0, 7, TOP, H, table(["", "Qwen3-1.7B", "Gemma 4 E2B-it"], [
-               ["Used on", "BIRD, FinQA", "MATH"],
-               ["Size", "1.41B decoder matmul + 0.31B tied head", "35 layers, about 2B effective"],
-               ["LoRA", "rank 256 on 7 projections, 196 modules, 0.28B trainable", "rank 256, 190 modules incl. fused k/v"],
-               ["Base accuracy", "30.6% BIRD · 44.0% FinQA", "74.9% MATH"],
-               ["Teacher", "60.7% BIRD · 75.7% FinQA", "92.5% MATH"],
-               ["Licence", "open weights", "Apache-2.0"]], [24, 40, 36], 23, accent=GOLD)) +
-           box(7, 5, TOP, h2, card("Qwen3-4B", "It already scores 61.7% on BIRD without training. We didn't measure its serving cost.", GRAY)) +
-           box(7, 5, TOP + h2 + 24, h2, learn("Picking the right student can matter as much as distilling it.", GOLD, "Lesson")),
-           "Both student families went through the same trainer.", "README, docs/COMPUTE.md, docs/RECIPE.md §9")
+  appendix(1, "automatic grader", "How the drawing task is set up",
+           box(0, 6, TOP, H, code("CELL 1   install transformers >= 4.50,\n         accelerate >= 1.2, peft >= 0.14,\n         trl >= 0.14, bitsandbytes >= 0.45,\n         datasets >= 3.2, huggingface_hub >= 0.28\nCELL 2   config, Google Drive caching,\n         xml.etree check on every SVG\nSTAGE 1  Qwen2.5-Coder-7B writes SVGs,\n         checkpoint every 250, resumable\nSTAGE 2  Gemma 3 4B QLoRA distillation\nSTAGE 3  vLLM TPU inference: teacher,\n         untrained and distilled student", DARK, "One Colab notebook", cls="sm")) +
+           box(6, 6, TOP, 444, table(["Drawing", ""], [
+               ["Input", "a short scene description"],
+               ["Check", "parses as XML with an <span class=mono>&lt;svg&gt;</span> root; otherwise “Malformed or Missing &lt;svg&gt; XML”"],
+               ["Training set", "20,000 teacher SVGs that pass the check"],
+               ["Test prompts", "Green Tree On Grass Field · Yellow Star In Dark Night · Yellow Sun Over Golden Beach · Red Rocket In Deep Space"]], [26, 74], 22, accent=DARK)) +
+           box(6, 6, TOP + 468, H - 468, learn("The check confirms the output is an SVG, not that it shows the prompt. There is no gold drawing, so we judge the renders by eye.", GOLD, "Caveat")),
+           "This shows the drawing pipeline and its check.", "Drawing run notebook and comparison table")
 
-  appendix(1, "A7", "Six decisions", "We fixed the evaluation design before seeing results",
+  appendix(1, "start weak", "A closer look at the three students",
+           box(0, 8, TOP, H, table(["", "Qwen3-1.7B", "Gemma 4 E2B-it", "Gemma 3 4B-it"], [
+               ["Used on", "BIRD, FinQA", "MATH", "drawing"],
+               ["Size", "1.41B decoder matmul + 0.31B tied head", "35 layers, about 2B effective", "4B"],
+               ["Adapters", "LoRA rank 256 on 7 projections, 196 modules, 0.28B trainable", "LoRA rank 256, 190 modules incl. fused k/v", "QLoRA: 4-bit base (bitsandbytes), peft adapters"],
+               ["Untrained", "30.6% BIRD · 44.0% FinQA", "74.9% MATH", "no score; 3 of 4 test SVGs parse"],
+               ["Teacher", "60.7% BIRD · 75.7% FinQA", "92.5% MATH", "Qwen2.5-Coder-7B; 4 of 4 parse"],
+               ["Licence", "open weights", "Apache-2.0", "Gemma terms of use"]], [16, 30, 27, 27], 20, accent=GOLD)) +
+           box(8, 4, TOP, h2, card("Qwen3-4B", "It already scores 61.7% on BIRD without training. We didn't measure its serving cost.", GRAY)) +
+           box(8, 4, TOP + h2 + 24, h2, learn("Picking the right student can matter as much as distilling it.", GOLD, "Lesson")),
+           "The Qwen3 and Gemma 4 students went through the same Tunix trainer; the drawing student used QLoRA.", "README, docs/COMPUTE.md, docs/RECIPE.md §9; drawing run")
+
+  appendix(1, "Six decisions", "We fixed the evaluation design before seeing results",
            grid6([("Targets set in advance", "We wrote down the pass conditions before each stage.", CORAL),
                   ("Test sets stayed untouched", "No evaluation set chose a checkpoint or a hyperparameter, and we fixed the final checkpoint in advance.", GOLD),
                   ("One run per comparison", "We serve and grade every compared model together, with greedy decoding and a 2,048-token limit.", TEAL),
@@ -1153,7 +1190,7 @@ def build_appendix():
                   ("Early stopping", "BIRD used only its 522 held-out training-database questions for early stopping.", CORAL)]),
            "This is how we avoided tuning on the test set.", "docs/RECIPE.md §7, README limits")
 
-  appendix(1, "A8", "Six decisions", "Answer length is a serving cost",
+  appendix(1, "Six decisions", "Answer length is a serving cost",
            box(0, 7, TOP, H, hbars([("FinQA", "Qwen3-1.7B · ~134-token answers", 17.5, CORAL), ("BIRD", "Qwen3-1.7B · short SQL answers", 15.8, CORAL),
                                     ("MATH", "Gemma 4 E2B · ~980-token answers", 4.8, CORAL)], 1040, 640, 20, 380, "{:.1f}×", 60)) +
            box(7, 5, TOP, h2, card("Why we turned thinking off", "Teacher and student both answer briefly. The student would copy long reasoning traces, and the teacher samples 4× faster without them.", NEUTRAL)) +
@@ -1161,7 +1198,7 @@ def build_appendix():
            "The cost advantage per correct answer depends on answer length.", "Bars: teacher ÷ student cost per correct answer (README)")
 
   # ---- the journey
-  appendix(2, "A9", "Check the measurements", "Every grader passed two checks",
+  appendix(2, "Check the measurements", "Every grader passed two checks",
            box(0, 12, TOP, 430, table(["Task", "Gold answers", "Shuffled answers", "How an answer is graded"], [
                ["BIRD", "100% of 1,530 executable", "0.2%", "run the last SQL block on a read-only copy; compare row sets"],
                ["FinQA", "100%", "0.6%", "number after the last <span class=mono>Answer:</span>, within 1%; ×100 and ÷100 forms accepted"],
@@ -1169,7 +1206,7 @@ def build_appendix():
            box(0, 12, TOP + 460, H - 460, learn("Before any accuracy number means anything, the grader has to score gold answers at 100% and shuffled answers near 0%. FinQA's grader is lenient, so its scores aren't comparable to published FinQA results.", CORAL, "Lesson")),
            "Every grader passes two checks before we use it.", "README, docs/RECIPE.md")
 
-  appendix(2, "A10", "Choose who writes", "How much training data each task produced",
+  appendix(2, "Choose who writes", "How much training data each task produced",
            box(0, 12, TOP, 430, table(["Set", "Questions", "Samples", "Correct", "Rows kept", "Time"], [
                ["BIRD, teacher ×4", "8,432", "33,728", "20,133 (60%)", "10,112", "38 min"],
                ["FinQA, teacher ×4", "6,109", "24,436", "18,487 (76%)", "6,016", "26 min"],
@@ -1179,7 +1216,7 @@ def build_appendix():
            box(6, 6, TOP + 460, H - 460, learn("On MATH, all correct answers to a problem reduce to the same normalised answer, so the 4-distinct limit keeps one row per problem.", TEAL, "Note")),
            "This shows how much training data each task produced and how much of it passed the grader.", "docs/COMPUTE.md, docs/RECIPE.md §4, §8, §9")
 
-  appendix(2, "A11", "Keep only the answers", "The leak audit found nothing",
+  appendix(2, "Keep only the answers", "The leak audit found nothing",
            box(0, 6, TOP, H, table(["The audit rejects", ""], [
                ["Evaluation groups", "BIRD databases, FinQA report pages, MATH problem fingerprints"],
                ["Question overlap", "exact match or a shared 13-word sequence with an evaluation question"],
@@ -1196,7 +1233,7 @@ def build_appendix():
       R(1040, 40, 470, 90, TEAL, 12), T(1275, 95, "response", 26, 800, "#ffffff", "middle"),
       R(1520, 40, 160, 90, TEAL, 12), T(1600, 95, "end-of-turn", 22, 800, "#ffffff", "middle"),
       T(670, 175, "loss weight 0", 24, 700, INK, "middle"), T(1360, 175, "loss weight 1", 24, 700, DARK, "middle")]), bare=True)
-  appendix(2, "A12", "Keep only the answers", "From graded answers to training records",
+  appendix(2, "Keep only the answers", "From graded answers to training records",
            box(0, 12, TOP, 200, mask) +
            box(0, 7, TOP + 230, H - 230, code('{"id": "...#s0",\n "db_id" | "report" | "problem_hash",\n "messages": [system, user],\n "response": "..."}\n\nGRPO adds: "group_id", "reward",\n           "truncated" (cut-off answers)', BLUE, "One JSONL record")) +
            box(7, 5, TOP + 230, H - 230, table(["Builder rules", ""], [
@@ -1206,7 +1243,7 @@ def build_appendix():
                ["Cut-off answers", "no end-of-turn token in the loss"]], [38, 62], 22, accent=BLUE)),
            "The loss covers only what the model should produce, and every record renders to exactly the prompt that vLLM serves.", "docs/ARCHITECTURE.md (record format)")
 
-  appendix(2, "A13", "Distil the student", "Supervised fine-tuning settings",
+  appendix(2, "Distil the student", "Supervised fine-tuning settings",
            box(0, 8, TOP, H, table(["Setting", "Value"], [
                ["Student weights", "bf16, frozen"],
                ["LoRA", "rank 256, alpha 512, attention and MLP projections, every layer; float32 adapters"],
@@ -1219,7 +1256,7 @@ def build_appendix():
            box(8, 4, TOP + h2 + 24, h2, learn("Every size is a multiple of 256 to match the v6e's 256 × 256 matrix unit.", TEAL, "Rule")),
            "We used one SFT configuration for every task and both students.", "docs/RECIPE.md §5, docs/COMPUTE.md")
 
-  appendix(2, "A14", "Distil the student", "The trainer and the server compute the same model",
+  appendix(2, "Distil the student", "The trainer and the server compute the same model",
            box(0, 4, TOP, h2, stat("0.998", "Qwen3 top-1 agreement, trainer vs vLLM, 16 prompts (limit 0.99); KL 1e-4", DARK)) +
            box(4, 4, TOP, h2, stat("0.994", "Gemma 4 top-1 agreement on vLLM's own continuations; KL 5.8e-4", DARK)) +
            box(8, 4, TOP, h2, stat("1 : 1", "retrain: identical loss at all 117 steps, byte-identical checkpoint", DARK)) +
@@ -1227,7 +1264,7 @@ def build_appendix():
            box(6, 6, TOP + h2 + 24, h2, card("Every model uses the same flags", "Merged checkpoints serve with the base model's flags, so compared models differ only in weights.", NEUTRAL)),
            "Before trusting any result, we checked that the training and serving models agree, and we ran an exact retrain.", "trainer/parity_check.py; docs/RECIPE.md §5, §9")
 
-  appendix(2, "A15", "Distil the student", "What it took to add Gemma 4",
+  appendix(2, "Distil the student", "What it took to add Gemma 4",
            box(0, 7, TOP, H, table(["Problem", "Fix"], [
                ["vLLM-TPU warm-up fails on the default PyTorch model path", "<span class=mono>MODEL_IMPL_TYPE=flax_nnx</span>: the JAX Gemma 4 model"],
                ["System message rendered as a Python list in 8 of 16 prompts", "<span class=mono>--chat-template-content-format string</span>; earlier outputs rerun"],
@@ -1237,7 +1274,7 @@ def build_appendix():
            box(7, 5, TOP + h2 + 24, h2, learn("Adding a new model family took one loader, one exporter and four serving fixes. The first start compiles for about 17 minutes per model.", TEAL, "Lesson")),
            "This is what it took to add a second model family.", "docs/RECIPE.md §9, problems and fixes")
 
-  appendix(2, "A16", "always right", "What happens in one GRPO round",
+  appendix(2, "always right", "What happens in one GRPO round",
            box(0, 12, TOP, 250, flow_svg([("Serve", "7–8 replicas of the", "current student", TEAL), ("Sample", "8 answers per question", "T 1.0, top-p 1.0", GOLD),
                                           ("Grade", "reward 1 if verified,", "else 0", CORAL), ("Select", "≤ 2,048 questions", "with mixed rewards", BLUE),
                                           ("Update", "64 sequences per step", "one pass", SKY)], CW, 250)) +
@@ -1247,7 +1284,7 @@ def build_appendix():
                ["KL", "k3 vs the starting checkpoint, β 0.02", "Guard", "stop if a step's KL > 0.2"]], [15, 30, 13, 42], 23, accent=CORAL)),
            "Each round serves the current student, samples, grades, keeps the questions with mixed outcomes, updates, merges and repeats.", "docs/RECIPE.md §6")
 
-  appendix(2, "A17", "always right", "RL stayed stable",
+  appendix(2, "always right", "RL stayed stable",
            box(0, 7, TOP, 60, '<div class="lh" style="padding-left:0">FinQA steps per round<span>fewer questions have mixed outcomes each round</span></div>') +
            box(0, 7, TOP + 70, H - 70, vbars([("1", 255, CORAL), ("2", 255, CORAL), ("3", 254, CORAL), ("4", 236, CORAL), ("5", 210, CORAL), ("6", 193, CORAL)], 1040, 640, 300)) +
            box(7, 5, TOP, h3, stat("≤ 0.05", "the highest KL in any step, round or task (BIRD 0.033, FinQA 0.049, MATH 0.017)", DARK)) +
@@ -1255,14 +1292,14 @@ def build_appendix():
            box(7, 5, TOP + 2 * (h3 + 24), h3, learn("At lr 2e-6, two rounds gave 1.7 to 2.1 points on BIRD. Raising it to 5e-6 for four more rounds reached 4.0.", CORAL, "Lesson")),
            "RL stayed close to the starting model. As the student improved, fewer questions had mixed outcomes.", "docs/RECIPE.md §6, §8, §9")
 
-  appendix(2, "A18", "always right", "What RL doesn't do",
+  appendix(2, "always right", "What RL doesn't do",
            box(0, 4, TOP, h2, stat("+0.4", "BIRD RL gain on 522 held-out training-database questions, CI [−2.3, +2.9], which is too small to detect", MUTED)) +
            box(4, 4, TOP, h2, stat("73.1 → 74.3", "BIRD best-of-8 on the training pool across 5 rounds, almost unchanged", INK)) +
            box(8, 4, TOP, h2, stat("133 → 159", "mean FinQA answer tokens under RL (+19%)", CORAL)) +
            box(0, 12, TOP + h2 + 24, h2, learn("RL sharpened answers the student could already reach instead of teaching new ones. GRPO added 1.82 points to the MATH KD student but only brought it back level with base, so RL can't make up for the wrong SFT data.", CORAL, "Lesson")),
            "These are the limits of the RL stage.", "README; distil/passk.py")
 
-  appendix(2, "A19", "runs on a single chip", "How we measured serving throughput",
+  appendix(2, "runs on a single chip", "How we measured serving throughput",
            box(0, 7, TOP, H, table(["", "Student", "Teacher"], [
                ["Software", "vLLM 0.26.1rc1 TPU build", "Model Garden vLLM"],
                ["Layout", "1 replica per v6e chip, TP 1", "TP 8 + expert parallel"],
@@ -1274,7 +1311,7 @@ def build_appendix():
            box(7, 5, TOP + h2 + 24, h2, learn("The BIRD and FinQA benchmarks cap answers at 1,024 tokens. MATH uses 2,048, because a 1,024 cap would cut off 36% of the student's answers.", CORAL, "Note")),
            "This is how we measured throughput for the cost numbers.", "README serving tables, docs/RECIPE.md §2")
 
-  appendix(2, "A20", "runs on a single chip", "What broke, and how we fixed it",
+  appendix(2, "runs on a single chip", "What broke, and how we fixed it",
            box(0, 12, TOP, H, table(["Problem", "Fix"], [
                ["Out of memory with two 8,192-token sequences per chip", "one sequence per chip; batch of 256 kept"],
                ["A prompt log-prob request (≈ 4.6 GB extra) stopped a serving replica", "parity runs on a separate replica with less cache"],
@@ -1284,8 +1321,29 @@ def build_appendix():
                ["The TPU VM was unavailable for 7 hours during MATH rollouts", "disclosed; a driver should stop when any rollout fails"]], [58, 42], 23, accent=CORAL)),
            "These are the operational problems we hit and how the pipeline handles them.", "docs/RECIPE.md, problems and fixes")
 
+  appendix(2, "Drawing runs the same six steps", "Generating and training on 20,000 drawings",
+           box(0, 5, TOP, H, table(["Step", "Training loss"], [[f"{a:,}", b] for a, b in [
+               (25, "0.687"), (50, "0.287"), (75, "0.257"), (100, "0.247"), (125, "0.245"), (150, "0.235"), (175, "0.233"), (200, "0.238"),
+               (225, "0.236"), (250, "0.232"), (275, "0.228"), (1250, "0.199")]], [40, 60], 21, bold_last=True, accent=DARK, cls="sm")) +
+           box(5, 7, TOP, h3, stat("1.6–2.2", "valid SVGs per second while the teacher wrote the training set, checkpointed every 250", GOLD)) +
+           box(5, 7, TOP + h3 + 24, h3, stat("2 h 31 min", "for one epoch of QLoRA: 1,250 steps over 20,000 examples", TEAL)) +
+           box(5, 7, TOP + 2 * (h3 + 24), h3, learn("Most of the drop comes in the first 50 steps, from 0.687 to 0.287. Adding end-of-turn tokens, tokenising, labelling and truncating kept all 20,000 examples.", CORAL, "What the log shows")),
+           "These are the generation and training numbers from the drawing run.", "Drawing run notebook logs; loss logged every 25 steps, final value at step 1,250")
+
+  appendix(2, "Drawing runs the same six steps", "Why a 7B coder teaches drawing",
+           box(0, 8, TOP, H, table(["Base model", "32B", "14B", "7B", "3B", "1.5B"], [
+               ["HumanEval", "65.9", "64.0", "<b>61.6</b>", "52.4", "43.9"],
+               ["MBPP (3-shot)", "76.4", "71.4", "<b>68.8</b>", "65.2", "59.2"],
+               ["MultiPL-E", "63.9", "59.9", "<b>57.5</b>", "48.0", "41.1"],
+               ["CRUXEval-O", "69.4", "66.4", "<b>56.0</b>", "43.8", "34.6"],
+               ["BigCodeBench", "40.0", "37.0", "<b>31.0</b>", "26.3", "22.1"],
+               ["Fill-in-the-middle", "88.3", "87.7", "<b>86.2</b>", "85.7", "83.5"]], [30, 14, 14, 14, 14, 14], 22, accent=BLUE)) +
+           box(8, 4, TOP, h2, card("Close to the largest model", "The 7B base model is within about 4 points of the 32B on HumanEval and within 2 on fill-in-the-middle.", BLUE)) +
+           box(8, 4, TOP + h2 + 24, h2, learn("These are the Qwen team's published base-model scores. We didn't measure them, and none of them is a drawing score.", GOLD, "Caveat")),
+           "This is the public evidence behind choosing Qwen2.5-Coder-7B as the drawing teacher.", "Qwen2.5-Coder base-model results, as published by the Qwen team")
+
   # ---- results
-  appendix(3, "A21", "All three students improved", "All BIRD comparisons and training-data options",
+  appendix(3, "Every graded task improved", "All BIRD comparisons and training-data options",
            box(0, 7, TOP, H, table(["BIRD dev, same run", "Δ points [95% CI]", "Better / worse"], [
                ["KD + GRPO − base", "<b>+21.6</b> [+19.2, +24.1]", "387 / 55"],
                ["KD − base", "<b>+17.6</b> [+15.2, +20.1]", "334 / 64"],
@@ -1299,7 +1357,7 @@ def build_appendix():
                ["Base", "30.6%"]], [70, 30], 23, accent=TEAL)),
            "Every BIRD comparison, with per-question win and loss counts, and the training-data options. CORR beat self-distillation by only 1.5 points [−1.0, +3.9].", "README")
 
-  appendix(3, "A22", "All three students improved", "All FinQA comparisons and the control",
+  appendix(3, "Every graded task improved", "All FinQA comparisons and the control",
            box(0, 7, TOP, H, table(["FinQA test, same run", "Δ points [95% CI]", "Better / worse"], [
                ["KD + GRPO − base", "<b>+28.4</b> [+25.5, +31.5]", "367 / 41"],
                ["KD − base", "<b>+22.6</b> [+19.4, +25.7]", "321 / 62"],
@@ -1310,7 +1368,7 @@ def build_appendix():
            box(7, 5, TOP + h2 + 24, h2, learn("The teacher's share is smaller than on BIRD because part of FinQA's self-distillation gain comes from learning the answer format. The base student gives no number at all on more than 100 test questions.", TEAL, "Why the control gains more")),
            "Every FinQA comparison, and why the control gains more here than on BIRD.", "README")
 
-  appendix(3, "A23", "strong student lost", "Every MATH result",
+  appendix(3, "strong student lost", "Every MATH result",
            box(0, 12, TOP, H, table(["Same-run evaluation, MATH test", "Accuracy", "Δ [95% CI]", "Cut-off answers"], [
                ["Base, two copies", "74.90 / 74.78", "−0.12 [−0.88, +0.62]", "—"],
                ["KD: 4,992 teacher answers", "72.56", "−2.34 [−3.44, −1.22] vs base", "577 (base 800)"],
@@ -1321,7 +1379,7 @@ def build_appendix():
                ["Self + GRPO − KD + GRPO (separate run)", "", "+2.82 [+1.78, +3.88]", ""]], [38, 14, 32, 16], 22, accent=GOLD)),
            "Every MATH result. The KD route doesn't catch up, even after GRPO.", "README, MATH section")
 
-  appendix(3, "A24", "strong student lost", "Teacher corrections hurt on MATH",
+  appendix(3, "strong student lost", "Teacher corrections hurt on MATH",
            box(0, 7, TOP, H, table(["CORR on MATH", ""], [
                ["Input to the teacher", "the student's first failed answer and one sentence about it; never the gold answer"],
                ["Failures", "2,793 problems: 1,620 cut off, 653 wrong answer, 520 no boxed answer"],
@@ -1332,14 +1390,14 @@ def build_appendix():
            box(7, 5, TOP + h2 + 24, h2, learn("The corrections are short, written in the teacher's style, and come only from hard problems. They pull a strong student furthest from its own reasoning.", GOLD, "Lesson")),
            "Teacher corrections helped a weak student a little on BIRD and hurt a strong student badly on MATH.", "README; docs/RECIPE.md §9")
 
-  appendix(3, "A25", "Counting cut-off answers", "How we score cut-off answers",
+  appendix(3, "Counting cut-off answers", "How we score cut-off answers",
            box(0, 6, TOP, H, code("rollout hits 2,048 tokens\n  no end-of-turn token emitted\n\nbefore: dropped from its group\n  -> the main failure never gets\n     a negative reward\n\nnow:    kept, reward 0,\n        \"truncated\": true\n  -> data.py gives the trailing\n     end-of-turn token weight 0", CORAL, "build_grpo_rollouts.py --keep-truncated")) +
            box(6, 6, TOP, h3, stat("~600 → ~1,300", "MATH problems per round with mixed outcomes", CORAL)) +
            box(6, 6, TOP + h3 + 24, h3, stat("+0.98", "scored wrong vs dropped, CI [+0.16, +1.78]", CORAL)) +
            box(6, 6, TOP + 2 * (h3 + 24), h3, learn("If we trained on a cut-off answer as written, the student would learn to stop where it never stopped. Leaving out the end-of-turn token lowers the probability of exactly the tokens it wrote.", TEAL, "Why we drop the end-of-turn token")),
            "This is how the cut-off fix works.", "docs/RECIPE.md §9 (truncated rollouts)")
 
-  appendix(3, "A26", "both cheap and accurate", "Cost per correct answer on each task",
+  appendix(3, "both cheap and accurate", "Cost per correct answer on each task",
            box(0, 12, TOP, 380, table(["Task", "Hardware price", "× throughput", "× accuracy", "= cheaper", "Student vs teacher $ / 1,000 correct"], [
                ["BIRD", "13.6×", "1.35× (15.8 vs 11.7 req/s)", "0.86×", "<b>15.8×</b>", "0.091 vs 1.438"],
                ["FinQA", "13.6×", "1.35× (24.1 vs 17.9 req/s)", "0.96×", "<b>17.5×</b>", "0.043 vs 0.750"],
@@ -1347,7 +1405,7 @@ def build_appendix():
            box(0, 12, TOP + 410, H - 410, learn("Hardware price gives the same 13.6× on every task, and throughput decides the rest. Short answers keep throughput above 1×, while long MATH answers cut it to 0.42×.", CORAL, "Lesson")),
            "This breaks down the cost advantage on all three tasks.", "README serving tables")
 
-  appendix(3, "A27", "both cheap and accurate", "How much compute each task used",
+  appendix(3, "both cheap and accurate", "How much compute each task used",
            box(0, 12, TOP, 330, stacked([("BIRD", {"gen": 0, "sft": 3.6, "grpo": 25.8, "roll": 12.5}), ("FinQA", {"sft": 1.7, "grpo": 16.3, "roll": 5.1}),
                                          ("MATH", {"gen": 6.2, "sft": 1.3, "grpo": 17.4, "roll": 34.0})],
                                         [("gen", "self-samples", GOLD), ("sft", "SFT", TEAL), ("grpo", "GRPO updates", CORAL), ("roll", "GRPO rollouts", SKY)], CW, 330, 140)) +
@@ -1357,7 +1415,7 @@ def build_appendix():
            "These are TPU v6e chip-hours per stage. SFT is cheap, RL takes most of the compute, and MATH rollouts dominate because the answers are long. Utilisation was 3-5%, so these are upper bounds.",
            "docs/COMPUTE.md, generated by distil/compute_report.py; bars in TPU v6e chip-hours")
 
-  appendix(3, "A28", "Why we trust", "What these results don't show",
+  appendix(3, "Why we trust", "What these results don't show",
            grid6([("One training seed", "We trained each model once, so the noise floor measures serving noise, not training-seed variance.", CORAL),
                   ("Student and task changed together", "The student changed along with the task, so \"already strong\" is our best explanation, not a proven cause.", GOLD),
                   ("Public benchmarks", "The teacher and students may have seen BIRD, FinQA or MATH during pre-training. This applies to every model.", TEAL),
@@ -1366,37 +1424,49 @@ def build_appendix():
                   ("The cost gap depends on deployment", "A faster teacher deployment would shrink the cost advantage (see A2).", CORAL)]),
            "These are the caveats we state up front.", "README, what this does not show")
 
+  appendix(3, "draws like its teacher", "What the drawing results don't show",
+           grid6([("No accuracy score", "The XML check is the only automatic measure, and there is no gold drawing to compare against.", CORAL),
+                  ("Four prompts", "The comparison covers 4 test prompts with one render per model, so it shows the effect but doesn't size it.", GOLD),
+                  ("No serving cost", "We didn't measure drawing throughput, so there is no cost per correct drawing.", TEAL),
+                  ("No RL", "We didn't run GRPO on drawing.", BLUE),
+                  ("A different trainer", "The drawing student trained with QLoRA in a Colab notebook, not with the Tunix TPU trainer.", SKY),
+                  ("One training run", "We trained the drawing student once, like the other students.", PINK)]),
+           "These are the caveats on the drawing results.", "Drawing run notebook and comparison table")
+
   # ---- stack, recipe, field
-  appendix(4, "A29", "open-source libraries", "Versions and machines",
+  appendix(4, "open-source libraries", "Versions and machines",
            box(0, 6, TOP, H, table(["Library", "Version", "Use"], [
                ["vLLM (TPU build)", "0.26.1rc1", "student serving"],
                ["JAX · libtpu", "0.11.0 · 0.0.44", "compile, TPU runtime"],
                ["google-tunix", "0.1.8", "Qwen3 / Gemma 4 models, trainer"],
                ["qwix", "0.1.8", "LoRA adapters"],
                ["Flax NNX · Optax · Orbax", "0.12.8 · 0.2.6 · 0.12.2", "modules, AdamW, checkpoints"],
-               ["transformers · safetensors", "5.12.1 · 0.7.0", "tokenizer, template, files"]], [44, 26, 30], 22, accent=SKY)) +
+               ["transformers · safetensors", "5.12.1 · 0.7.0", "tokenizer, template, files"],
+               ["transformers · peft · trl", "≥ 4.50 · ≥ 0.14 · ≥ 0.14", "drawing: QLoRA notebook"],
+               ["bitsandbytes · datasets", "≥ 0.45 · ≥ 3.2", "drawing: 4-bit base, data"]], [44, 26, 30], 22, accent=SKY)) +
            box(6, 6, TOP, H, table(["Machine", "Role"], [
                ["TPU v6e-8 VM, us-east5-a", "serves, trains, merges, benchmarks the student; never serving and training at once"],
                ["CPU VM n4-standard-64", "databases, prompts, grading, data builds, long-run drivers"],
                ["Vertex AI endpoint, 8× H200, us-south1", "the teacher"],
-               ["Cloud Storage bucket", "checkpoints, data, evidence"]], [42, 58], 22, accent=INK)),
+               ["Cloud Storage bucket", "checkpoints, data, evidence"],
+               ["Colab notebook, Google Drive", "drawing: SVG generation and QLoRA training, cached checkpoints"]], [42, 58], 22, accent=INK)),
            "These are the exact versions and what each machine does.", "docs/RECIPE.md, docs/ARCHITECTURE.md")
 
-  appendix(4, "A30", "open-source libraries", "How the code is organised",
+  appendix(4, "open-source libraries", "How the code is organised",
            box(0, 12, TOP, 250, flow_svg([("prompts.py", "versioned template", "per task", GOLD), ("generate.py", "teacher or student", "resumes by id", INK),
                                           ("grade.py", "task grader", "gold + shuffled", CORAL), ("build_*.py", "SFT or GRPO records", "+ leak_audit.py", TEAL),
                                           ("trainer/", "SFT / GRPO / merge", "Tunix on v6e-8", BLUE), ("report.py", "paired CIs, cost", "from raw files", SKY)], CW, 250)) +
-           box(0, 6, TOP + 280, H - 280, card("distil/", "Standard-library scripts. Every task-specific step goes through <span class=mono>distil/tasks/</span> (bird, finqa, math), selected with <span class=mono>--task</span>.", NEUTRAL)) +
+           box(0, 6, TOP + 280, H - 280, card("distil/", "Standard-library scripts. Every task-specific step goes through <span class=mono>distil/tasks/</span> (bird, finqa, math), selected with <span class=mono>--task</span>. The drawing experiment is a separate Colab notebook.", NEUTRAL)) +
            box(6, 6, TOP + 280, H - 280, card("trainer/", "<span class=mono>train.py</span> picks Qwen3 or Gemma 4 from config.json, <span class=mono>data.py</span> masks the loss, and <span class=mono>parity_check.py</span> and <span class=mono>kl_guard.sh</span> check the results.", NEUTRAL)),
            "The two halves share data only through JSONL files and Hugging Face checkpoints.", "docs/ARCHITECTURE.md")
 
-  appendix(4, "A31", "How to run this recipe", "Adding your own task or student",
+  appendix(4, "How to run this recipe", "Adding your own task or student",
            box(0, 6, TOP, H, code("# distil/tasks/<your_task>.py\nload_items(split)      -> items\nPROMPT_VERSION, render(item)\nextract(response)      -> answer\ngrade(answer, item)    -> bool\n\n# controls before use\ngold answers   ~ 100%\nshuffled       ~ 0%\n\n# then: add the name to NAMES", TEAL, "A new task is one module")) +
            box(6, 6, TOP, h2, card("Adding a new student", "Add a config builder, loader, LoRA targets and delta exporter in <span class=mono>student_models.py</span>, and its end-of-turn marker in <span class=mono>data.py</span>.", NEUTRAL)) +
            box(6, 6, TOP + h2 + 24, h2, learn("Check logit parity with parity_check.py, and check the served chat template with vLLM's /tokenize. We added FinQA, MATH and Gemma 4 this way.", CORAL, "Before you train")),
            "This is what you write to bring the recipe to a new task or model.", "docs/ARCHITECTURE.md, extension points; interface names abbreviated")
 
-  appendix(4, "A32", "TorchTitan", "A closer look at TorchTitan RL",
+  appendix(4, "TorchTitan", "A closer look at TorchTitan RL",
            grid6([("Sampling never pauses", "Rollouts run continuously, new weights are swapped in while they run, and the buffer takes any 32 finished groups in any order.", BLUE),
                   ("The KV cache survives updates", "They keep it across weight updates with no accuracy loss. KV headroom limits how many rollouts run in parallel.", TEAL),
                   ("The agent runs outside the sandbox", "The policy controls a sandbox but doesn't run inside it.", INK),
@@ -1406,7 +1476,7 @@ def build_appendix():
            "These are the design choices Meta described for TorchTitan RL on Terminal-Bench.",
            "Speaker's notes of \"Training long-horizon agents with TorchTitan RL\", PyTorch Conference 2026")
 
-  appendix(4, "A33", "TorchTitan", "What we'd borrow from TorchTitan RL",
+  appendix(4, "TorchTitan", "What we'd borrow from TorchTitan RL",
            box(0, 12, TOP, H, table(["Idea from TorchTitan RL", "Where it fits in TPU-Distil", "Why"], [
                ["Asynchronous rollouts", "overlap sampling and updates across the 8 chips", "rollouts were 30% of BIRD and 58% of MATH chip-hours, with the trainer idle"],
                ["Online task generation (+8 points vs a static pool)", "generate new questions per round from training data", "later FinQA rounds ran out of mixed-outcome questions"],
@@ -1582,6 +1652,19 @@ html, body { margin: 0; background: #1a1a1a; height: 100%; overflow: hidden; }
 .bet-s { font-family: 'Inter Tight', 'Figtree', Arial, sans-serif; font-weight: 700; letter-spacing: -0.01em; color: __DARK__; font-size: 36px; line-height: 1.15; margin: 10px 0 10px; }
 .bet-b { font-size: 23px; line-height: 1.35; }
 .source.two { top: 990px; font-size: 19px; line-height: 1.3; }
+.task.xs { padding: 16px 20px; } .task.xs .task-h { font-size: 30px; gap: 10px; } .task.xs .task-h span { font-size: 15px; }
+.task.xs .task-r { font-size: 18px; padding: 5px 0; } .task.xs .task-r > span { font-size: 13px; margin-right: 8px; }
+.card.xs { padding: 14px 20px; } .card.xs .card-t { font-size: 23px; margin-bottom: 6px; } .card.xs .card-b { font-size: 18px; line-height: 1.35; }
+.pic { background: __CARD__; border-radius: 22px; box-shadow: inset 0 0 0 2px __RULE__; height: 100%; padding: 14px; display: flex; align-items: center; justify-content: center; }
+.pic img { max-width: 100%; max-height: 100%; border-radius: 10px; }
+.gal { display: grid; grid-template-columns: 200px repeat(3, 1fr); grid-template-rows: 54px repeat(4, 1fr); gap: 8px 16px; height: 100%; }
+.gal .gh { align-self: end; text-align: center; font-size: 16px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: __MUTED__; }
+.gal .gh b { display: block; font-size: 19px; letter-spacing: 0; text-transform: none; color: __INK__; }
+.gal .gp { align-self: center; font-size: 20px; font-weight: 700; line-height: 1.25; }
+.gal .gc { display: flex; align-items: center; justify-content: center; gap: 14px; background: __CARD__; border-radius: 16px; box-shadow: inset 0 0 0 2px __RULE__; padding: 8px; min-height: 0; }
+.gal .gc img { height: 100%; max-height: 132px; border-radius: 8px; box-shadow: 0 0 0 1px __RULE__; }
+.chip { font-size: 15px; font-weight: 800; padding: 3px 10px; border-radius: 12px; white-space: nowrap; border: 2px solid; }
+.chip.ok { color: __TEAL__; } .chip.bad { color: __CORAL__; }
 .build { opacity: 0; transition: opacity .3s ease; }
 .build.on { opacity: 1; }
 .notes { display: none; }
